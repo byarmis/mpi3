@@ -62,3 +62,22 @@ Since the Raspberry Pi Zero does not have any built-in audio outputs and the pre
 * [AudioQuest DragonFly Black](https://www.amazon.com/gp/product/B01DP5JHHI/)
 * [Fiio E10k](https://www.amazon.com/FiiO-E10K-Headphone-Amplifier-Black/dp/B00LP3AMC2/)
   * This was mostly added as a sanity check.  See [USB DAC Troubleshooting](USB_DAC_TROUBLESHOOTING.md)
+
+## Power Consumption
+
+The testing setup, pictured below, for measuring the power consumption is pretty standard:
+![Testing Setup](/imgs/IMG_20170511_181704.jpg)
+
+There is a 5v USB power supply being fed through the multimeter and into the Raspberry Pi.
+
+|   **DAC**       | **Off** | **On / Idle** | **Pink Noise**  |     | *Off Standby Time* | *Music Playing Time* |
+|:--------------- | ------- | ------------- | --------------- | --- | ------------------ | -------------------- |
+| None            | 35 mA   | 113 mA        | 114 mA          |     | 62 hr              | 19 hr                |
+| DragonFly Black | 74 mA   | 152 mA        | 158 mA          |     | 29 hr              | 13 hr                |
+| TROND AC2       | 36 mA   | 147 mA        | 150 mA          |     | 61 hr              | 14 hr                |
+| UGREEN          | 36 mA   | 145 mA        | 148 mA          |     | 61 hr              | 14 hr                |
+| CableCreation   | 37 mA   | 148 mA        | 151 mA          |     | 59 hr              | 14 hr                |
+
+The current draw even after being powered off is surprisingly high-- this will definitely require adding a physical power switch to the PowerBoost to disable it after the Pi is shutdown.
+
+In general, all of the DACs draw roughly the same amount of power either playing songs or not.  The additional power draw of the DragonFly Black is probably due to its LED that illuminates and changes color based on the bitrate of the music being played through it.  Unfortunately, this LED remains on even after shutting down the Pi.  This downside, however, is negated by the fact that the power should be cut after shutdown anyway. 
