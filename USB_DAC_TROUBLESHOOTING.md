@@ -9,7 +9,7 @@ I purchased the AudioQuest DragonFly Black with the intention of using it in thi
 
 I also found using a USB DAC/amp that costs 10x more than the thing driving it mildly amusing.
 
-~~Unfortunately, the AudioQuest DragonFly Black does *not* work with the Raspberry Pi Zero.~~  Acceptably, `pulseaudio` has to be installed for it to be detected and be properly used by `speaker-test`.  After installing it and attempting to play music (either through `mpg123` or `speaker-test`) resulted in no sound.  Turning the volume all the way up made the white noise faintly audible, indicating that some communication was going on, but no audio came out.
+Acceptably, `pulseaudio` has to be installed for it to be detected and be properly used by `speaker-test`.  After installing it and attempting to play music (either through `mpg123` or `speaker-test`) resulted in no sound.  Turning the volume all the way up made white noise faintly audible, indicating that some communication was going on, but no audio came out.
 
 I did confirm that both the headphones I was using as well as the DragonFly Black worked and worked with Linux (Ubuntu 16.10).
 
@@ -167,7 +167,7 @@ I found it in [this](https://volumio.org/forum/with-new-rpi-zero-t6050-50.html) 
 
 Unfortunately, the audio isn't perfect.
 
-When running `speaker-test` (with or without the `-c 2` option for stereo channel testing) or `aplay` with a sample .wav file, there are pops and crackles during sound playback.  They somewhat appear related to the relative volume of the sound being played in that the hard "c" and the sharp "t" in "front center" has more pops and crackles than the middle of the first word.
+When running `speaker-test` (with or without the `-c 2` option for stereo channel testing) or `aplay` with a sample .wav file, there are pops and crackles during sound playback.
 
 This behavior is not observed with the Fiio E10k.
 
@@ -212,17 +212,20 @@ Note that the `Momentary freq` is just 50 Hz higher than the requested frequency
 
 ## The Plot Thickens
 
-After `speaker-test` has played pink noise for several minutes, the `Momentary freq` returns back to `48000 Hz (0x30.0000)` and the popping and crackling goes away.  If I stop `speaker-test` for several seconds (5 count) and start it back up again, the pink noise resumes without any issues.  If I instead wait a little longer (10 count) to resume the `speaker-test`, the `Momentary freq` will again be slightly higher or lower than it should be.  It settles down and corrects itself after several moments.
+After `speaker-test` has played pink noise for several moments, the `Momentary freq` returns back to `48000 Hz (0x30.0000)` and the popping and crackling goes away.  If I stop `speaker-test` for several seconds (5 count) and start it back up again, the pink noise resumes without any issues.  If I instead wait a little longer (10 count) to resume the `speaker-test`, the `Momentary freq` will again be slightly higher or lower than it should be.  It settles down and corrects itself after several moments.
 
 A similar behavior is not observed  listening to music, however.  Running `mpg123` and listening to an .mp3 file, there is always crackling and popping and `Momentary freq` does not appear to settle to the bit-rate of the song even when given additional time compared with the `speaker-test`.
 
-Taxing the CPU with running [`dd if=/dev/urandom | bzip2 -9 >> /dev/null`](http://stackoverflow.com/questions/2925606/how-to-create-a-cpu-spike-with-a-bash-command#comment27590337_2927364) while, at the same time, running a `speaker-test` and `watch`ing `/proc/asound/card1/stream0` does not appear to hinder the `Momentary freq`'s return back to 48 kHz, taking roughly the same amount of time to settle back when running a speaker test.  The `bzip2` process causes roughly 70% CPU load.
+Taxing the CPU with running [`dd if=/dev/urandom | bzip2 -9 >> /dev/null`](http://stackoverflow.com/questions/2925606/how-to-create-a-cpu-spike-with-a-bash-command#comment27590337_2927364) while, at the same time, running a `speaker-test` and `watch`ing `/proc/asound/card1/stream0` does not appear to hinder the `Momentary freq`'s return back to 48 kHz, taking roughly the same amount of time to settle back when running a speaker test.  The `bzip2` process causes roughly 70% CPU load.  This indicates to me that the issue is not caused by the CPU being taxed.
 
-Trying the following (taken from [this](https://volumio.org/forum/solution-pops-and-clicks-t772.html) forum post) did not appear to help, unfortunately:
+Adding the following (taken from [this](https://volumio.org/forum/solution-pops-and-clicks-t772.html) forum post) to `/boot/cmdline.txt` did not appear to help, unfortunately: `dwc_otg.fiq_enable=1 dwc_otg.fiq_fsm_enable=1 dwc_otg.fiq_fsm_mask=0x3`
 
-#### `/boot/cmdline.txt`
+## Additional Things that resulted in no change
 
-```
-dwc_otg.fiq_enable=1 dwc_otg.fiq_fsm_enable=1 dwc_otg.fiq_fsm_mask=0x3
-```
+* Modifying `dwc_otg.nak_holdoff` to be 2 or 0.
 
+* Decreasing pulseaudio's `nice-level` configuration from -11 to -15.
+
+## The Conclusion
+
+Given the odd behavior of the USB timing, I opened [this](https://github.com/raspberrypi/linux/issues/2020) bug in the Raspberry Pi Linux kernel.  After quite a bit of back and forth and testing, [P33M](https://github.com/P33M) came up with a fix that removes the need for any modified to `cmdline.txt` or `config.txt`, including `dtoverlay=dwc2`.

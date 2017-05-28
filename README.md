@@ -66,7 +66,7 @@ Since the Raspberry Pi Zero does not have any built-in audio outputs and the pre
 ## Power Consumption
 
 The testing setup, pictured below, for measuring the power consumption is pretty standard:
-![Testing Setup](/imgs/IMG_20170511_181704.jpg)
+![Testing Setup](/imgs/current_testing.jpg)
 
 There is a 5v USB power supply being fed through the multimeter and into the Raspberry Pi.
 
