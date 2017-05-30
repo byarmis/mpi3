@@ -1,8 +1,12 @@
-import random
-import time
-import datetime
-import string
+#!/bin/python
 from PIL import Image, ImageDraw, ImageFont
+from subprocess import check_output, call
+import datetime
+import random
+import re
+import string
+import time
+
 from papirus import Papirus
 
 WHITE = 1
@@ -44,27 +48,77 @@ class Cursor:
         self.y = self._get_y()
         self.draw.text((0, self.y), '>', font=self.font, fill=BLACK)
 
+class State:
+    def __init__(self):
+        self.icons = {'normal': ' ',
+                      'shuffle': 'X',
+                      'repeat one': 'o',
+                      'repeat all': 'O'}
+        self.state_names = ('normal', 'shuffle', 'repeat one', 'repeat all')
+        self.cnt = 0
+        self.state = self.get()
+
+    def get(self):
+        return self.state_names[self.cnt]
+
+    def next(self):
+        self.state_cnt += 1
+        self.state_cnt %= len(self.state_names)
+
+        self.state = self.get()
+
+    def __str__(self):
+        return self.icons[self.state]
+
+
 class Title:
-    def __init__(self, image):
+    def __init__(self, image, state, volume):
         self.font, self.draw = get_font_draw(image, TITLE_SIZE)
+        self.state = state
+        self.volume = volume
 
     @property
     def state(self):
-        return 'X'
+        return str(self.state)
 
     @property
     def time(self):
-        return '12:54'
-
-    @property
-    def volume(self):
-        return '5'
+        return datetime.datetime.now().strftime('%I:%M')
 
     def get_text(self):
-        return '{state}   {time}   {volume}'.format(state=self.state, time=self.time, volume=self.volume)
+        return '{state}   {time}   {volume}'.format(state=self.state, 
+                                                    time=self.time,
+                                                    volume=self.volume.get)
 
     def draw_title(self):
         self.draw.text((0,0), self.get_text(), font=self.font)
+
+class Volume:
+    def __init__(self):
+        self.val = 1
+        _ = self.set_volume(self.val)
+
+    @property
+    def increase(self):
+        if self.val < 19:
+            self.val += 1
+
+        _ = self.set_volume(self.val)
+
+    @property
+    def decrease(self):
+        if self.val > 1:
+            self.val -= 1
+
+        _ = self.set_volume(self.val)
+
+    def set_volume(self, val):
+        return call(['amixer', 'sset', 'Master', '{}%'.format(self.get)])
+
+    @property
+    def get(self):
+        return self.val * 5
+
 
 class BackButton:
     def __init__(self, text, image):
@@ -92,11 +146,13 @@ class Player:
         self.image = Image.new('1', SCREEN_SIZE, WHITE)
         self.draw = ImageDraw.Draw(self.image)
         
+        self.vol = Volume()
         self.cursor = Cursor(self.image)
-        self.title = Title(self.image)
         self.screen = Screen(self, self.papirus)
         self.menu = Menu(self.image)
         self.back = BackButton('   <-', self.image)
+        self.state = State()
+        self.title = Title(self.image, state=self.state, volume=self.vol)
 
     def move_cursor(self, dir):
         self.cursor.value += dir
@@ -181,12 +237,11 @@ p.screen.render()
 time.sleep(DELAY)
 
 while True:
-    for _ in range(40):
-        p.move_cursor(1)
-        p.screen.render()
-        time.sleep(DELAY)
 
-    for _ in range(40):
-        p.move_cursor(-1)
-        p.screen.render()
-        time.sleep(DELAY)
+    for _ in range(18):
+        p.vol.increase
+        print p.vol.get
+
+    for _ in range(18):
+        p.vol.decrease
+        print p.vol.get
