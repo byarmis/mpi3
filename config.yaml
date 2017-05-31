@@ -6,7 +6,8 @@ screen_size:
   width: 96
   height: 200
 music:
-  directory: ~/Music/
+  directory:
+    - ~/Music/
 colors:
   white: 1
   black: 0

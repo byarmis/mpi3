@@ -3,7 +3,7 @@
 
 class PapirusMock:
     def __init__(self, **kwargs):
-        for k, v in kwargs:
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
     def clear(self):

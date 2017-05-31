@@ -8,7 +8,7 @@ import random
 import string
 import time
 
-from setup import get_config, scan_library
+from initialize import get_config, scan_library
 
 # TODO: Add conditional import or mock
 if False:
@@ -49,10 +49,10 @@ class State:
                       'repeat one': 'o',
                       'repeat all': 'O'}
         self.state_names = cycle(('normal', 'shuffle', 'repeat one', 'repeat all'))
-        self.state = self.state_names.next()
+        self.state = next(self.state_names)
 
     def next(self):
-        self.state = self.state_names.next()
+        self.state = next(self.state_names)
 
     def __str__(self):
         return self.icons[self.state]
@@ -71,7 +71,7 @@ class Title:
         return datetime.datetime.now().strftime('%I:%M')
 
     def get_text(self):
-        return f'{self.player.state}   {self.time}   {self.player.volume.get}'
+        return f'{self.player.state}   {self.time}   {self.player.vol.get}'
 
     def draw_title(self):
         self.player.draw.text((0, 0), self.get_text(), font=self.player.font)
@@ -128,11 +128,11 @@ class Library:
         self.player = player
         self.items = []
         for loc in player.config['music']['directory']:
-            self.items.append(scan_library(os.path.expanduser(loc)))
+            self.items.append(scan_library(loc))
 
 
 class Player:
-    def __init__(self):
+    def __init__(self, menu=None):
         self.config = get_config()
         self.screen_size = (self.config['screen_size']['width'],
                             self.config['screen_size']['height'])
@@ -148,13 +148,13 @@ class Player:
         self.vol = Volume()
         self.cursor = Cursor(self)
         self.screen = Screen(self)
-        self.menu = Menu(self)
+        self.menu = menu or Menu(self)
         self.back = Button(self, text='   <-', on_press=self.menu.previous)
         self.state = State()
         self.title = Title(self)
         self.library = Library(self)
 
-        self.screen = ['HOME'] # Keep track of breadcrumbs.  Might not be necessary and just replace with Bool
+        self.home = True
 
     def move_cursor(self, direction):
         self.cursor.value += direction
@@ -189,33 +189,31 @@ class Screen:
     def render(self):
         self.blank()
         self.player.title.draw_title()
-        if self.player.screen != ['HOME']:
+
+        if not self.player.home:
             self.player.draw.text((0, self.player.config['font']['title_size']),
-                                  self.player.text, font=self.player.font)
+                                  self.player.back, font=self.player.font)
 
         self.player.cursor.draw_cursor()
         self.player.menu.draw_page()
 
-        self.papirus.display(self.image)
+        self.player.papirus.display(self.player.image)
         self.update()
 
     def update(self):
         if self.update_partial:
-            self.papirus.partial_update()
+            self.player.papirus.partial_update()
         else:
-            self.papirus.update()
+            self.player.papirus.update()
             self.update_partial = True
 
     def blank(self):
-        self.draw.rectangle((0, 0) + self.size, fill=self.player.WHITE, outline=self.player.WHITE)
+        self.player.draw.rectangle((0, 0) + self.size, fill=self.player.WHITE, outline=self.player.WHITE)
 
 
 class Menu:
     def __init__(self, player):
-        self.config = player.config
-        self.image = player.image
-        self.draw = player.draw
-        self.font = player.font
+        self.player = player
 
         items = [get_triple_letters() for _ in range(30)]
         self.paginated = [p for p in self.get_pages(items)]
@@ -225,12 +223,13 @@ class Menu:
         print('Going to previous')
 
     def get_child(self):
+        self.player.home = False
         # Get the item in the list selected by the cursor
         print(self.paginated[self.page_val][self.player.cursor.value])
 
     def get_pages(self, L):
-        for i in range(0, len(L), self.config['computed']['page_size']):
-            yield L[i:i + self.config['computed']['page_size']]
+        for i in range(0, len(L), self.player.config['computed']['page_size']):
+            yield L[i:i + self.player.config['computed']['page_size']]
 
     @property
     def page(self):
@@ -238,25 +237,12 @@ class Menu:
 
     def get_coordinates(self, x):
         # Title plus back button
-        offset = self.config.title_size + self.config.font_size
-        return 0, (self.config.font_size * x) + offset
+        font_size = self.player.config['font']['size']
+        offset = self.player.config['font']['title_size'] + font_size
+        return 0, (font_size * x) + offset
 
     def draw_page(self):
         for loc, L in enumerate(self.page):
-            self.draw.text(self.get_coordinates(loc), L, font=self.font, fill=self.player.BLACK)
+            self.player.draw.text(self.get_coordinates(loc), L, font=self.player.font, fill=self.player.BLACK)
 
 
-DELAY = 0.5
-p = Player()
-p.screen.render()
-time.sleep(DELAY)
-
-while True:
-
-    for _ in range(18):
-        p.vol.increase
-        p.screen.render()
-
-    for _ in range(18):
-        p.vol.decrease
-        p.screen.render()
