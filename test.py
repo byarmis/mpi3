@@ -1,9 +1,8 @@
-#!/bin/python
+#!/bin/python3.6
 from PIL import Image, ImageDraw, ImageFont
 from subprocess import check_output, call
 import datetime
 import random
-import re
 import string
 import time
 
@@ -13,25 +12,28 @@ WHITE = 1
 BLACK = 0
 FONT_SIZE = 15
 TITLE_SIZE = 13
-PAGE_SIZE=11
+PAGE_SIZE = 11
 SCREEN_SIZE = (96, 200)
-
 
 FONT = '/home/pi/UbuntuMono-R.ttf'
 
+
 def get_triple_letters():
-    return ' '+''.join([random.choice(string.ascii_lowercase),
-                        random.choice(string.ascii_lowercase),
-                        random.choice(string.ascii_lowercase)])
+    return ' ' + ''.join([random.choice(string.ascii_lowercase),
+                          random.choice(string.ascii_lowercase),
+                          random.choice(string.ascii_lowercase)])
+
 
 def get_chunks(L):
     for i in range(0, len(L), PAGE_SIZE):
-        yield L[i:i+PAGE_SIZE]
+        yield L[i:i + PAGE_SIZE]
+
 
 def get_font_draw(image, size=FONT_SIZE):
     font = ImageFont.truetype(FONT, size)
     draw = ImageDraw.Draw(image)
-    return (font, draw)
+    return font, draw
+
 
 class Cursor:
     def _get_y(self):
@@ -47,6 +49,7 @@ class Cursor:
     def draw_cursor(self):
         self.y = self._get_y()
         self.draw.text((0, self.y), '>', font=self.font, fill=BLACK)
+
 
 class State:
     def __init__(self):
@@ -86,12 +89,11 @@ class Title:
         return datetime.datetime.now().strftime('%I:%M')
 
     def get_text(self):
-        return '{state}   {time}   {volume}'.format(state=self.state, 
-                                                    time=self.time,
-                                                    volume=self.volume.get)
+        return f'{self.state}   {self.time}   {self.volume.get}'
 
     def draw_title(self):
-        self.draw.text((0,0), self.get_text(), font=self.font)
+        self.draw.text((0, 0), self.get_text(), font=self.font)
+
 
 class Volume:
     def __init__(self):
@@ -128,6 +130,7 @@ class BackButton:
 
     def __repr__(self):
         return self.text
+
     def __str__(self):
         return self.text
 
@@ -137,6 +140,7 @@ class BackButton:
     def draw_button(self):
         self.draw.text((0, TITLE_SIZE), self.text, font=self.font)
 
+
 class Player:
     def __init__(self, font=FONT):
         self.font = font
@@ -145,7 +149,7 @@ class Player:
 
         self.image = Image.new('1', SCREEN_SIZE, WHITE)
         self.draw = ImageDraw.Draw(self.image)
-        
+
         self.vol = Volume()
         self.cursor = Cursor(self.image)
         self.screen = Screen(self, self.papirus)
@@ -154,8 +158,8 @@ class Player:
         self.state = State()
         self.title = Title(self.image, state=self.state, volume=self.vol)
 
-    def move_cursor(self, dir):
-        self.cursor.value += dir
+    def move_cursor(self, direction):
+        self.cursor.value += direction
 
         if self.cursor.value < 0:
             self.cursor.value = 1
@@ -165,15 +169,16 @@ class Player:
             self.cursor.value = 1
             self.page_change(1)
 
-    def page_change(self, dir):
-        self.menu.page_val += dir
+    def page_change(self, direction):
+        self.menu.page_val += direction
         if self.menu.page_val == len(self.menu.paginated):
-            self.menu.page_val = 0 # Wrap around
+            self.menu.page_val = 0  # Wrap around
 
         elif self.menu.page_val < 0:
             self.menu.page_val = len(self.menu.paginated) - 1
 
         self.screen.update_partial = False
+
 
 class Screen:
     def __init__(self, player, papirus, size=SCREEN_SIZE):
@@ -196,7 +201,7 @@ class Screen:
 
         self.papirus.display(self.image)
         self.update()
- 
+
     def update(self):
         if self.update_partial:
             self.papirus.partial_update()
@@ -214,7 +219,7 @@ class Menu:
         self.draw = ImageDraw.Draw(self.image)
         self.font = ImageFont.truetype(font, FONT_SIZE)
 
-        items = [get_triple_letters() for _ in range(30)] 
+        items = [get_triple_letters() for _ in range(30)]
         self.paginated = [p for p in get_chunks(items)]
         self.page_val = 0
 
@@ -222,14 +227,16 @@ class Menu:
     def page(self):
         return self.paginated[self.page_val]
 
-    def get_coordinates(self, x):
+    @staticmethod
+    def get_coordinates(x):
         # Title plus back button
         offset = TITLE_SIZE + FONT_SIZE
-        return (0, (FONT_SIZE*x)+offset)
-    
+        return 0, (FONT_SIZE * x) + offset
+
     def draw_page(self):
         for loc, L in enumerate(self.page):
             self.draw.text(self.get_coordinates(loc), L, font=self.font, fill=BLACK)
+
 
 DELAY = 0.5
 p = Player()
@@ -240,8 +247,10 @@ while True:
 
     for _ in range(18):
         p.vol.increase
-        print p.vol.get
+        print
+        p.vol.get
 
     for _ in range(18):
         p.vol.decrease
-        print p.vol.get
+        print
+        p.vol.get
