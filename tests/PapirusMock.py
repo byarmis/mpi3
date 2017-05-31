@@ -1,5 +1,6 @@
 #!/bin/python3
 
+
 class PapirusMock:
     def __init__(self, **kwargs):
         for k, v in kwargs:

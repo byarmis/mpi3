@@ -1,19 +1,16 @@
 #!/bin/python3
-import pyaml
+import yaml
 
-# def get_constants():
-#     return {
-#         'font_size': 15,
-#         'title_size': 13,
-#         'screen_size': {'height': 200,
-#                         'width': 96},
-#         'colors': {'white': 1, 'black': 0}
-#     }
-#
 
 def get_config():
     with open('config.yaml') as f:
-        c = pyaml.load(f)
+        c = yaml.load(f)
 
-    c['page_size'] = (c['screen_size']['height'] - c['font']['title_size']) // c['font']['size']
+    c['computed'] = {}
+    c['computed']['page_size'] = (c['screen_size']['height'] - c['font']['title_size']) // c['font']['size']
     return c
+
+
+def scan_library(loc):
+    print(f'Scanning {loc}')
+    print('Just kidding, this is a test')
