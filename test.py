@@ -1,21 +1,18 @@
-#!/bin/python3.6
+#!/bin/python3
 from PIL import Image, ImageDraw, ImageFont
-from subprocess import check_output, call
+from subprocess import call
 import datetime
 import random
 import string
 import time
 
-from papirus import Papirus
+from setup import get_config
 
-WHITE = 1
-BLACK = 0
-FONT_SIZE = 15
-TITLE_SIZE = 13
-PAGE_SIZE = 11
-SCREEN_SIZE = (96, 200)
-
-FONT = '/home/pi/UbuntuMono-R.ttf'
+# TODO: Add conditional import or mock
+if False:
+    from papirus import Papirus
+else:
+    from tests.PapirusMock import PapirusMock as Papirus
 
 
 def get_triple_letters():
@@ -24,31 +21,23 @@ def get_triple_letters():
                           random.choice(string.ascii_lowercase)])
 
 
-def get_chunks(L):
-    for i in range(0, len(L), PAGE_SIZE):
-        yield L[i:i + PAGE_SIZE]
-
-
-def get_font_draw(image, size=FONT_SIZE):
-    font = ImageFont.truetype(FONT, size)
-    draw = ImageDraw.Draw(image)
-    return font, draw
-
-
 class Cursor:
     def _get_y(self):
-        return TITLE_SIZE + (FONT_SIZE * self.value)
+        return self.player.config['font']['title_size'] + (self.player.config['font']['size'] * self.value)
 
-    def __init__(self, image, size=15):
+    def __init__(self, player):
+        self.player = player
+
         self.value = 1
         self.y = self._get_y()
 
-        self.image = image
-        self.font, self.draw = get_font_draw(image, size)
+        self.image = player.image
+        self.font = player.font
+        self.draw = player.draw
 
     def draw_cursor(self):
         self.y = self._get_y()
-        self.draw.text((0, self.y), '>', font=self.font, fill=BLACK)
+        self.draw.text((0, self.y), '>', font=self.font, fill=self.player.BLACK)
 
 
 class State:
@@ -65,8 +54,8 @@ class State:
         return self.state_names[self.cnt]
 
     def next(self):
-        self.state_cnt += 1
-        self.state_cnt %= len(self.state_names)
+        self.cnt += 1
+        self.cnt %= len(self.state_names)
 
         self.state = self.get()
 
@@ -96,7 +85,7 @@ class Title:
 
 
 class Volume:
-    def __init__(self):
+    def __init__(self, render):
         self.val = 1
         _ = self.set_volume(self.val)
 
@@ -142,18 +131,23 @@ class BackButton:
 
 
 class Player:
-    def __init__(self, font=FONT):
-        self.font = font
+    def __init__(self, config):
+        self.config = get_config()
+        self.screen_size = (config['screen_size']['width'],
+                            config['screen_size']['height'])
 
+        self.WHITE = self.config['colors']['white']
+        self.BLACK = self.config['colors']['black']
+
+        self.font = ImageFont.truetype(config['font']['dir'], config['font']['size'])
         self.papirus = Papirus(rotation=90)
-
-        self.image = Image.new('1', SCREEN_SIZE, WHITE)
+        self.image = Image.new('1', self.screen_size, self.WHITE)
         self.draw = ImageDraw.Draw(self.image)
 
         self.vol = Volume()
         self.cursor = Cursor(self.image)
         self.screen = Screen(self, self.papirus)
-        self.menu = Menu(self.image)
+        self.menu = Menu(self)
         self.back = BackButton('   <-', self.image)
         self.state = State()
         self.title = Title(self.image, state=self.state, volume=self.vol)
@@ -181,16 +175,12 @@ class Player:
 
 
 class Screen:
-    def __init__(self, player, papirus, size=SCREEN_SIZE):
+    def __init__(self, player):
         self.player = player
-        self.size = size
+        self.size = player.screen_size
         self.update_partial = False
 
-        self.image = player.image
-        self.draw = ImageDraw.Draw(self.image)
-        self.papirus = papirus
-
-        self.papirus.clear()
+        self.player.papirus.clear()
 
     def render(self):
         self.blank()
@@ -210,28 +200,32 @@ class Screen:
             self.update_partial = True
 
     def blank(self):
-        self.draw.rectangle((0, 0) + self.size, fill=WHITE, outline=WHITE)
+        self.draw.rectangle((0, 0) + self.size, fill=self.player.WHITE, outline=self.player.WHITE)
 
 
 class Menu:
-    def __init__(self, image, font=FONT):
+    def __init__(self, config, player):
+        self.config = config
         self.image = image
         self.draw = ImageDraw.Draw(self.image)
-        self.font = ImageFont.truetype(font, FONT_SIZE)
+        self.font =
 
         items = [get_triple_letters() for _ in range(30)]
         self.paginated = [p for p in get_chunks(items)]
         self.page_val = 0
 
+    def get_chunks(L):
+        for i in range(0, len(L), PAGE_SIZE):
+            yield L[i:i + PAGE_SIZE]
+
     @property
     def page(self):
         return self.paginated[self.page_val]
 
-    @staticmethod
-    def get_coordinates(x):
+    def get_coordinates(self, x):
         # Title plus back button
-        offset = TITLE_SIZE + FONT_SIZE
-        return 0, (FONT_SIZE * x) + offset
+        offset = self.config.title_size + self.config.font_size
+        return 0, (self.config.font_size * x) + offset
 
     def draw_page(self):
         for loc, L in enumerate(self.page):
@@ -247,10 +241,12 @@ while True:
 
     for _ in range(18):
         p.vol.increase
+        p.screen.render()
         print
         p.vol.get
 
     for _ in range(18):
         p.vol.decrease
+        p.screen.render()
         print
         p.vol.get

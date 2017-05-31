@@ -1,0 +1,12 @@
+font:
+  dir: ~/UbuntuMono-R.ttf
+  size: 15
+  title_size: 13
+screen_size:
+  width: 96
+  height: 200
+music:
+  directory: ~/Music/
+colors:
+  white: 1
+  black: 0
