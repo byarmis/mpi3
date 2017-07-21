@@ -11,3 +11,9 @@ music:
 colors:
   white: 1
   black: 0
+buttons:
+  up: 26
+  down: 19
+  select: 20
+  play: 16
+  volume: 21

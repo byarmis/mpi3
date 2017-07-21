@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/bin/python
 
 
 class PapirusMock:
@@ -10,7 +10,7 @@ class PapirusMock:
         print('CLEARING SCREEN')
 
     def display(self, other):
-        print(f'DISPLAYING {other}')
+        print('DISPLAYING {other}'.format(other=other))
 
     def partial_update(self):
         print('PARTIALLY UPDATING DISPLAY')

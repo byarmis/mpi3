@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/bin/python
 from PIL import Image, ImageDraw, ImageFont
 from subprocess import call
 from itertools import cycle
@@ -11,11 +11,7 @@ import time
 from initialize import get_config, scan_library
 
 # TODO: Add conditional import or mock
-if False:
-    from papirus import Papirus
-else:
-    from tests.PapirusMock import PapirusMock as Papirus
-
+from papirus import Papirus
 
 def get_triple_letters():
     return ' ' + ''.join([random.choice(string.ascii_lowercase),
@@ -61,6 +57,7 @@ class State:
 class Title:
     def __init__(self, player):
         self.player = player
+        self.font = ImageFont.truetype(os.path.expanduser(self.player.config['font']['dir']), self.player.config['font']['title_size'])
 
     @property
     def state(self):
@@ -71,10 +68,12 @@ class Title:
         return datetime.datetime.now().strftime('%I:%M')
 
     def get_text(self):
-        return f'{self.player.state}   {self.time}   {self.player.vol.get}'
+        return '{state}   {time}   {vol}'.format(state=self.player.state,
+                                                 time=self.time,
+                                                 vol=self.player.vol.get)
 
     def draw_title(self):
-        self.player.draw.text((0, 0), self.get_text(), font=self.player.font)
+        self.player.draw.text((0, 0), self.get_text(), font=self.font)
 
 
 class Volume:
@@ -140,7 +139,7 @@ class Player:
         self.WHITE = self.config['colors']['white']
         self.BLACK = self.config['colors']['black']
 
-        self.font = ImageFont.truetype(self.config['font']['dir'], self.config['font']['size'])
+        self.font = ImageFont.truetype(os.path.expanduser(self.config['font']['dir']), self.config['font']['size'])
         self.papirus = Papirus(rotation=90)
         self.image = Image.new('1', self.screen_size, self.WHITE)
         self.draw = ImageDraw.Draw(self.image)
@@ -148,7 +147,7 @@ class Player:
         self.vol = Volume()
         self.cursor = Cursor(self)
         self.screen = Screen(self)
-        self.menu = menu or Menu(self)
+        self.menu = menu or Menu(player=self, items=[get_triple_letters() for _ in range(30)])
         self.back = Button(self, text='   <-', on_press=self.menu.previous)
         self.state = State()
         self.title = Title(self)
@@ -212,24 +211,25 @@ class Screen:
 
 
 class Menu:
-    def __init__(self, player):
+    def __init__(self, player, items, parent=None):
+        self.items = items
+        self.page_size = player.config['computed']['page_size']
         self.player = player
-
-        items = [get_triple_letters() for _ in range(30)]
-        self.paginated = [p for p in self.get_pages(items)]
+        self.paginated = [p for p in self.generate_pages()]
         self.page_val = 0
+        self.parent = parent
 
     def previous(self):
         print('Going to previous')
+        return self.parent
 
-    def get_child(self):
-        self.player.home = False
+    def get_child(self, val):
         # Get the item in the list selected by the cursor
-        print(self.paginated[self.page_val][self.player.cursor.value])
+        print(self.paginated[self.page_val][val])
 
-    def get_pages(self, L):
-        for i in range(0, len(L), self.player.config['computed']['page_size']):
-            yield L[i:i + self.player.config['computed']['page_size']]
+    def generate_pages(self):
+        for i in range(0, len(self.items), self.page_size):
+            yield self.items[i:i + self.page_size]
 
     @property
     def page(self):
@@ -244,5 +244,3 @@ class Menu:
     def draw_page(self):
         for loc, L in enumerate(self.page):
             self.player.draw.text(self.get_coordinates(loc), L, font=self.player.font, fill=self.player.BLACK)
-
-
