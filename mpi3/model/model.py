@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class Volume(object):
     def __init__(self):
         logger.debug('Initializing volume object')
-        self.val = 1
+        self.val = 2
         self.set_volume(self.val)
 
     @property

@@ -5,6 +5,7 @@ from mpi3.view.view import View
 from mpi3 import initialize
 
 import logging
+import subprocess
 import time
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,8 @@ class Player(object):
                                  play=self.play,
                                  volume=self.vol)
 
+        self.process = subprocess.Popen(['mpg123', '--remote'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
     def up(self, _):
         logger.debug('UP')
         vol = self.model.volume.increase
@@ -36,21 +39,20 @@ class Player(object):
 
     def sel(self, _):
         logger.debug('SELECT')
+        self.process.stdin.write('STOP\n')
 
     def play(self, _):
         logger.debug('PLAY')
+        self.process.stdin.write('PAUSE\n')
 
     def vol(self, _):
         logger.debug('volume')
 
     def run(self):
         logger.debug('Running player')
-        import os
-        import subprocess
+        self.process.stdin.write('LOAD /home/pi/Music/R.mp3\n')
+        logger.debug('Playing music started')
 
-        subprocess.call(['mpg123', '/home/pi/Music/Ramones - Blitzkrieg Bop (Remastered Version).mp3'])
-        time.sleep(5)
-        time.sleep(5)
-        time.sleep(10)
+        self.process.wait()
 
         logger.debug('Running player-- complete')
