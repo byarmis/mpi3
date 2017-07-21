@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def get_config():
     logger.debug('Getting config')
-    with open('./mpi3/config.yaml') as f:
+    with open('./config.yaml') as f:
         logger.debug('Loading yaml file')
         c = yaml.load(f)
         logger.debug('yaml file loaded')

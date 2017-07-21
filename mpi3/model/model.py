@@ -18,7 +18,6 @@ class Volume(object):
         if self.val < 19:
             self.val += 1
         self.set_volume(self.val)
-        logger.debug('Volume now {}'.format(self.get))
         return self.get
 
     @property
@@ -34,7 +33,6 @@ class Volume(object):
 
     def set_volume(self, val):
         self.val = val
-        logger.debug('Setting volume to be {}'.format(self.get))
         call(['amixer', 'sset', 'Master', '{}%'.format(self.get)])
 
 

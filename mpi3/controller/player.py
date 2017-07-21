@@ -45,7 +45,12 @@ class Player(object):
 
     def run(self):
         logger.debug('Running player')
+        import os
+        import subprocess
 
-        time.sleep(30)
+        subprocess.call(['mpg123', '/home/pi/Music/Ramones - Blitzkrieg Bop (Remastered Version).mp3'])
+        time.sleep(5)
+        time.sleep(5)
+        time.sleep(10)
 
         logger.debug('Running player-- complete')
