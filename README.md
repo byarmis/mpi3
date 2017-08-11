@@ -42,7 +42,7 @@ It is suggested that you use a computer to SSH into the Raspberry Pi Zero in ord
   * `sudo apt-get upgrade`
   * `sudo apt-get dist-upgrade`
   * `sudo apt-get autoremove`
-  * `sudo apt-get install rpi-update git mpg123 vorbis-toolbox`
+  * `sudo apt-get install rpi-update git mpg123 vorbis-toolbox sqlite3`
   * `sudo rpi-update`
 7. Run `sudo raspi-config` and change to auto-login to terminal on boot-up.  Also, update your timezone and wifi settings since we're here
 8. Install the [PaPiRus python package](https://github.com/PiSupply/PaPiRus) by running `curl -sSL https://pisupp.ly/papiruscode | sudo bash`
