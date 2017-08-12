@@ -8,6 +8,8 @@ screen_size:
 music:
   directory:
     - ~/Music/
+  library: library.sqlite
+  buffer_load_size: 3
 colors:
   white: 1
   black: 0

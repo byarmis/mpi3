@@ -9,6 +9,7 @@ import subprocess
 import time
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Player(object):
@@ -17,6 +18,7 @@ class Player(object):
         self.config = initialize.get_config()
         self.model = Model(self.config)
         self.view = View(self.config)
+        self.volume = self.model.volume
 
         initialize.setup_buttons(self.config,
                                  up=self.up,
@@ -25,21 +27,23 @@ class Player(object):
                                  play=self.play,
                                  volume=self.vol)
 
-        self.process = subprocess.Popen(['mpg123', '--remote'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.process = None
+        # self.process = subprocess.Popen(['mpg123', '--remote'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
     def up(self, _):
         logger.debug('UP')
-        vol = self.model.volume.increase
+        vol = self.volume.increase
         logger.debug('Volume increased to {}'.format(vol))
 
     def down(self, _):
         logger.debug('DOWN')
-        vol = self.model.volume.decrease
+        vol = self.volume.decrease
         logger.debug('Volume decreased to {}'.format(vol))
 
     def sel(self, _):
         logger.debug('SELECT')
         self.process.stdin.write('STOP\n')
+        self.process.kill()
 
     def play(self, _):
         logger.debug('PLAY')
@@ -50,9 +54,9 @@ class Player(object):
 
     def run(self):
         logger.debug('Running player')
-        self.process.stdin.write('LOAD /home/pi/Music/R.mp3\n')
+        # self.process.stdin.write('LOAD /home/pi/Music/R.mp3\n')
         logger.debug('Playing music started')
 
-        self.process.wait()
+        # self.process.wait()
 
         logger.debug('Running player-- complete')

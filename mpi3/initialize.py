@@ -20,26 +20,6 @@ def get_config():
     logger.debug('Parsed the following config file:\n{}'.format(c))
     return c
 
-
-def scan_libraries(locs):
-    logger.debug('Scanning following directory(s):{}'.format('\n\t'.join(locs)))
-    files = []
-
-    for loc_raw in locs:
-        loc = os.path.expanduser(loc_raw)
-        logger.debug('Scanning {raw}, expanded to {expanded}'.format(raw=loc_raw, expanded=loc))
-
-        for (dirpath, _, filename) in os.walk(loc):
-            if filename:
-                files.extend(os.path.join(dirpath, f) for f in filename)
-
-    if not files:
-        logger.warn('No files found')
-
-    logger.info('Total of {} files found in {} music directory(s)'.format(len(files), len(locs)))
-    return files
-
-
 def setup_buttons(config, **kwargs):
     GPIO.setmode(GPIO.BCM)
 

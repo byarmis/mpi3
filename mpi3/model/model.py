@@ -1,10 +1,12 @@
 #!/bin/python
 
+import os
 import logging
-from mpi3 import initialize
 from subprocess import call
+from mpi3.model.db import Database
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Volume(object):
@@ -36,7 +38,13 @@ class Volume(object):
         call(['amixer', 'sset', 'Master', '{}%'.format(self.get)])
 
 
+class Library(object):
+    def __init__(self, music_config):
+        logger.debug('Initializing the library')
+        self.db = Database(music_config)
+
+
 class Model(object):
     def __init__(self, config):
-        self.files = initialize.scan_libraries(config['music']['directory'])
+        self.library = Library(config['music'])
         self.volume = Volume()
