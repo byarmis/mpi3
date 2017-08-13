@@ -9,7 +9,7 @@ music:
   directory:
     - ~/Music/
   library: library.sqlite
-  buffer_load_size: 3
+  buffer_load_size: 10
 colors:
   white: 1
   black: 0

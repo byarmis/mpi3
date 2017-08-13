@@ -3,7 +3,9 @@
 import sqlite3
 import logging
 import os
-import mutagen # TODO: ADD
+from mutagen.mp3 import MP3
+from mutagen.easyid3 import EasyID3
+import mutagen
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -13,17 +15,18 @@ CREATE TABLE library (
       id            INTEGER PRIMARY KEY AUTOINCREMENT
     , filepath      TEXT UNIQUE NOT NULL
     , length        INTEGER
+    , title         TEXT
     , album         TEXT
     , artist        TEXT
-    , disc          INTEGER
     , track_number  INTEGER
+    , total_tracks  INTEGER
 );
 '''
 
 INSERT_SONGS = '''
 INSERT INTO library 
-  (filepath, length, album, artist, disc, track_number) 
-VALUES {};
+  (filepath, length, title, album, artist, track_number, total_tracks) 
+VALUES (?,?,?,?,?,?,?);
 '''
 
 
@@ -64,15 +67,34 @@ class BatchAdder(object):
         if len(self._buffer) >= self.buffer_size:
             self._add_buffer()
 
-    def _extract_tags(self, f):
-# (filepath, length, album, artist, disc, track_number)
+    @staticmethod
+    def _extract_tags(f):
+        logger.debug('Extracting tags for {}'.format(f))
+        audio = MP3(f, ID3=EasyID3)
 
-        return (f,)
+        title = audio.get('title')
+        album = audio.get('album')
+        artist = audio.get('artist')
+        track_tuple = audio.get('tracknumber')
+
+        title = title[0] if title else None
+        album = album[0] if album else None
+        artist = artist[0] if artist else None
+
+        if track_tuple:
+            track_split = track_tuple[0].split('/')
+            track_number = int(track_split[0])
+            total_tracks = int(track_split[1]) if len(track_split) > 1 else None
+        else:
+            track_number, total_tracks = None, None
+
+        t = (f, int(audio.info.length), title, album, artist, track_number, total_tracks)
+        return t
 
     def _add_buffer(self):
-        values_str = ','.join(str(i) for i in self._buffer)
+        logger.info('Adding batch of songs ({})'.format(len(self._buffer)))
         with OpenConnection(self.db_file) as db:
-            db.execute(INSERT_SONGS.format(values_str))
+            db.executemany(INSERT_SONGS, self._buffer)
 
         self._buffer = []
 
@@ -116,6 +138,6 @@ class Database(object):
                         self.adder.add(os.path.join(dirpath, f))
 
         with OpenConnection(self.db_file) as db:
-            self._library_size = db.execute('SELECT count(*) FROM library;').fetchall()
+            self._library_size = db.execute('SELECT count(*) FROM library;').fetchone()[0]
 
         logger.info('{} music files added'.format(self._library_size))
