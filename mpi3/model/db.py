@@ -3,9 +3,10 @@
 import sqlite3
 import logging
 import os
+import re
+
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
-import mutagen
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -87,6 +88,15 @@ class BatchAdder(object):
             total_tracks = int(track_split[1]) if len(track_split) > 1 else None
         else:
             track_number, total_tracks = None, None
+
+        if track_number is None or track_number == 112:  # Testing tracks all were equal to 112 -_-
+            # If it starts with ##-, set ## to track number
+            m = re.match(r'\A(\d*)\W', os.path.basename(f))
+            if m:
+                logger.info('Overwriting the current track number '
+                            '({}) with an auto-extracted one ({})'.format(track_number,
+                                                                          int(m.group(1))))
+                track_number = int(m.group(1))
 
         t = (f, int(audio.info.length), title, album, artist, track_number, total_tracks)
         return t

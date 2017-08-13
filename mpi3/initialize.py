@@ -20,6 +20,7 @@ def get_config():
     logger.debug('Parsed the following config file:\n{}'.format(c))
     return c
 
+
 def setup_buttons(config, **kwargs):
     GPIO.setmode(GPIO.BCM)
 
