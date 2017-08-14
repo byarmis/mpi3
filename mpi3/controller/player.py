@@ -20,6 +20,9 @@ class Player(object):
         self.view = View(self.config)
         self.volume = self.model.volume
 
+        self.is_playing = False
+        self.process = None
+
         initialize.setup_buttons(self.config,
                                  up=self.up,
                                  down=self.down,
@@ -27,8 +30,38 @@ class Player(object):
                                  play=self.play,
                                  volume=self.vol)
 
-        self.process = None
-        # self.process = subprocess.Popen(['mpg123', '--remote'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.initialize_mpg123()
+
+    def initialize_mpg123(self):
+        self.process = subprocess.Popen(['mpg123', '--remote'],
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE)
+
+    def play_next_song(self):
+        if self.process.poll():
+            logger.debug('Player is not running.  Starting...')
+            self.initialize_mpg123()
+
+        logger.debug('Getting next song')
+        next_song = self.model.get_next()
+        if next_song:
+            logger.debug('Next song\'s path is: {}'.format(next_song))
+            logger.debug('Playing next song')
+            self.play_song(next_song)
+            logger.debug('Playing next song started')
+
+    def play_song(self, song_path):
+        if self.is_playing:
+            logger.debug('Stopping current song')
+            self.stop()
+
+        self.process.stdin.write('LOAD {}\n'.format(song_path))
+        self.is_playing = True
+
+    def stop(self):
+        self.process.stdin.write('STOP\n')
+        self.is_playing = False
+        logger.debug('Song stopped')
 
     def up(self, _):
         logger.debug('UP')
@@ -42,21 +75,26 @@ class Player(object):
 
     def sel(self, _):
         logger.debug('SELECT')
-        self.process.stdin.write('STOP\n')
-        self.process.kill()
+        self.stop()
 
     def play(self, _):
         logger.debug('PLAY')
         self.process.stdin.write('PAUSE\n')
+        logger.debug('Song paused')
 
     def vol(self, _):
-        logger.debug('volume')
+        logger.debug('VOL pressed')
+        logger.debug('Playing next song')
+        self.play_next_song()
 
     def run(self):
         logger.debug('Running player')
-        # self.process.stdin.write('LOAD /home/pi/Music/R.mp3\n')
+
         logger.debug('Playing music started')
 
-        # self.process.wait()
+        self.play_song(self.model.get_first())
+        while self.model.has_songs_in_playlist:
+            self.process.wait()
+            self.play_next_song()
 
         logger.debug('Running player-- complete')

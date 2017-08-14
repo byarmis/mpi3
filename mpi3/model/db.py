@@ -54,6 +54,7 @@ class BatchAdder(object):
         self._buffer = []
         self.buffer_size = config['buffer_load_size']
         self.db_file = config['library']
+        self.bad_tracks = {int(i) for i in config['bad_tracks']}
 
         if self.buffer_size > 500:
             logger.warning('A buffer load size of {} was selected, '
@@ -68,8 +69,7 @@ class BatchAdder(object):
         if len(self._buffer) >= self.buffer_size:
             self._add_buffer()
 
-    @staticmethod
-    def _extract_tags(f):
+    def _extract_tags(self, f):
         logger.debug('Extracting tags for {}'.format(f))
         audio = MP3(f, ID3=EasyID3)
 
@@ -89,7 +89,7 @@ class BatchAdder(object):
         else:
             track_number, total_tracks = None, None
 
-        if track_number is None or track_number == 112:  # Testing tracks all were equal to 112 -_-
+        if track_number is None or track_number in self.bad_tracks:
             # If it starts with ##-, set ## to track number
             m = re.match(r'\A(\d*)\W', os.path.basename(f))
             if m:

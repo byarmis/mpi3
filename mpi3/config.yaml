@@ -10,6 +10,8 @@ music:
     - ~/Music/
   library: library.sqlite
   buffer_load_size: 10
+  bad_tracks:
+    - 112
 colors:
   white: 1
   black: 0
