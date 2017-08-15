@@ -64,7 +64,7 @@ class Library(object):
             order_by = 'track_number ASC'
         else:
             logger.debug('Songs should be sorted alphabetically')
-            order_by = 'title DESC'
+            order_by = 'sortable_title ASC'
 
         with OpenConnection(self.music_config['library']) as db:
             p = db.execute(GET_PLAYLIST.format(filter_statement=filter_statement,
@@ -77,7 +77,8 @@ class Library(object):
     def get_path_by_id(self, song_id):
         with OpenConnection(self.music_config['library']) as db:
             logger.debug('Getting path for song id: {}'.format(song_id))
-            path = db.execute(GET_PATH_BY_ID, (song_id,)).fetchall()[0]
+            path = db.execute(GET_PATH_BY_ID, (song_id,)).fetchall()[0][0]
+        logger.debug('Path acquired: {}'.format(path))
         return path
 
 
