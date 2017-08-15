@@ -1,6 +1,7 @@
 #!/bin/python
 
 import logging
+import random
 from itertools import cycle
 from subprocess import call
 from mpi3.model.db import Database, OpenConnection
@@ -115,17 +116,17 @@ class Model(object):
             logger.warn('Cannot get first song-- empty playlist')
 
     def get_next(self):
-        self.song_counter += 1
+        if self.playback_state in ('NORMAL', 'LOOP'):
+            self.song_counter += 1
 
         if self.playback_state == 'LOOP':
-            if self.song_counter == len(self.playlist):
-                self.song_counter = 0
-        elif self.playback_state == 'REPEAT':
-            self.song_counter -= 1
+            self.song_counter %= len(self.playlist)
 
-        elif self.playback_state in ('NORMAL', 'SHUFFLE'):
-            if self.song_counter == len(self.playlist):
-                return None
+        elif self.playback_state == 'REPEAT':
+            pass
+
+        elif self.playback_state == 'SHUFFLE':
+            self.song_counter = random.randint(0, len(self.playlist) - 1)
 
         next_id = self.playlist[self.song_counter]
         return self.library.get_path_by_id(next_id)

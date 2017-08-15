@@ -10,6 +10,9 @@ import subprocess
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+FORWARD = True
+BACKWARD = False
+
 
 class Player(object):
     def __init__(self):
@@ -38,13 +41,13 @@ class Player(object):
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE)
 
-    def change_song(self, forward=True):
+    def change_song(self, direction):
         if self.process.poll():
             logger.debug('Player is not running.  Starting...')
             self.initialize_mpg123()
 
         logger.debug('Getting next song')
-        next_song = self.model.get_next() if forward else self.model.get_prev()
+        next_song = self.model.get_next() if direction == FORWARD else self.model.get_prev()
 
         if next_song:
             logger.debug('Next song\'s path is: {}'.format(next_song))
@@ -77,21 +80,23 @@ class Player(object):
 
         elif self.button_mode == 'PLAYBACK':
             logger.info('Playing next song')
-            self.change_song(forward=True)
+            self.change_song(direction=FORWARD)
 
     def down(self, _):
         logger.debug('DOWN')
 
         if self.button_mode == 'NORMAL':
+            logger.debug('Mode is NORMAL')
             pass
 
         elif self.button_mode == 'VOLUME':
+            logger.debug('Decreasing volume')
             vol = self.volume.decrease
             logger.debug('Volume decreased to {}'.format(vol))
 
         elif self.button_mode == 'PLAYBACK':
             logger.info('Playing previous song')
-            self.change_song(forward=False)
+            self.change_song(direction=BACKWARD)
 
     def sel(self, _):
         logger.debug('SELECT')
@@ -109,12 +114,15 @@ class Player(object):
         logger.debug('PLAY')
 
         if self.button_mode == 'NORMAL':
+            logger.debug('Changing button mode to PLAYBACK')
             self.button_mode = 'PLAYBACK'
 
         elif self.button_mode == 'VOLUME':
+            logger.debug('Getting next playback mode')
             self.model.next_playback_state()
 
         elif self.button_mode == 'PLAYBACK':
+            logger.debug('Exiting PLAYBACK button mode, going back to NORMAL')
             self.button_mode = 'NORMAL'
 
     def vol(self, _):
@@ -123,9 +131,11 @@ class Player(object):
             pass
 
         elif self.button_mode == 'VOLUME':
+            logger.debug('Exiting VOLUME button mode, going back to NORMAL')
             self.button_mode = 'NORMAL'
 
         elif self.button_mode == 'PLAYBACK':
+            logger.debug('Getting next playback mode')
             self.model.next_playback_state()
 
     def run(self):
@@ -136,6 +146,6 @@ class Player(object):
         self.play_song(self.model.get_first())
         while self.model.has_songs_in_playlist:
             self.process.wait()
-            self.change_song(forward=True)
+            self.change_song(direction=FORWARD)
 
         logger.debug('Running player-- complete')
