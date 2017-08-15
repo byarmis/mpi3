@@ -12,10 +12,6 @@ music:
   buffer_load_size: 10
   bad_tracks:
     - 112
-  stop_words:
-    - the
-    - a
-    - an
 colors:
   white: 1
   black: 0

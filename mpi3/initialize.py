@@ -1,6 +1,5 @@
 #!/bin/python
 import yaml
-import os
 import logging
 
 import RPi.GPIO as GPIO

@@ -1,6 +1,7 @@
 #!/bin/python
 
 import logging
+from itertools import cycle
 from subprocess import call
 from mpi3.model.db import Database, OpenConnection
 
@@ -18,6 +19,8 @@ SELECT filepath
 FROM library
 WHERE id = ?
 ;'''
+
+PLAYBACK_STATES = cycle(('NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT'))
 
 
 class Volume(object):
@@ -90,7 +93,7 @@ class Model(object):
         self.song_counter = 0
         self.filters = []
 
-        self.playback_state = 'NORMAL'
+        self.playback_state = PLAYBACK_STATES.next()
 
         # Initializing playlist with all songs-- should probably change
         self.playlist = self.library.get_playlist(self.filters)
@@ -98,6 +101,11 @@ class Model(object):
     @property
     def has_songs_in_playlist(self):
         return self.song_counter < len(self.playlist)
+
+    def next_playback_state(self):
+        logger.debug('Playback state was: {}...'.format(self.playback_state))
+        self.playback_state = PLAYBACK_STATES.next()
+        logger.debug('... and is now {}'.format(self.playback_state))
 
     def get_first(self):
         if self.playlist:
@@ -133,7 +141,6 @@ class Model(object):
     def add_filter(self, artist=None, album=None):
         if not artist and not album:
             logger.warn('Attempted to add an empty filter.  Ignoring')
-            return False
 
         if artist:
             self.filters.append('artist = {}'.format(artist))
@@ -145,8 +152,6 @@ class Model(object):
 
         self.song_counter = 0
 
-        return True
-
     def remove_filter(self):
         if self.filters:
             p = self.filters.pop()
@@ -155,8 +160,5 @@ class Model(object):
             self.playlist = self.library.get_playlist(self.filters)
             self.song_counter = 0
 
-            return True
-
         else:
             logger.error('Tried to remove filter from empty filter list')
-            return False
