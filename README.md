@@ -74,5 +74,5 @@ The components that can be removed are:
 
 To remove the unneeded components, I just used a soldering iron with a blob of solder on the tip and a pair of tweezers.  I went back after with some desoldering braid to clean up the extra solder.  Be sure to leave the capacitor that's near the inductor.
 
-![PowerBoost without components](/imgs/powerboost_no_components.jpg){:class="img-responsive"}
+![PowerBoost without components](/imgs/powerboost_no_components.jpg){: class="img-responsive"}
 
