@@ -174,7 +174,7 @@ class Database(object):
         logger.debug('Retrieved following playlist: {}'.format(p))
         return p
 
-    def get_by_id(self, ids, limit_clause, paths=False, titles=False):
+    def get_by_id(self, ids, limit_clause='', paths=False, titles=False):
         if paths:
             logger.debug('Getting paths by ID')
             get_type = 'filepath'
@@ -187,8 +187,17 @@ class Database(object):
         with OpenConnection(self.db_file) as db:
             res = db.execute(GET_BY_ID.format(get_type=get_type,
                                               limit_clause=limit_clause), (ids,)).fetchall()[0]
-            # Should return ((3, 'path'),(4,'path')...)
+            # Should return ((3, 'path'), (4,'path')...)
+            # or ((3, 'name'), (4, 'name')...)
 
-        id_to_str = dict(res)
         logger.debug('Data acquired: {}'.format(res))
-        return [id_to_str[i] for i in ids]
+        if len(res) == 2:
+            id_to_str = {res[0]: res[1]}
+        else:
+            id_to_str = dict(res)
+        logger.debug('Dictionary acquired: {}'.format(id_to_str))
+
+        try:
+            return [id_to_str[i] for i in ids]
+        except TypeError:
+            return [id_to_str[ids]]

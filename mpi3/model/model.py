@@ -6,15 +6,15 @@ from itertools import cycle
 from subprocess import call
 
 from mpi3.model.db import Database
+from constants import (
+    PLAYBACK_STATES as STATES,
+    DIRECTION as DIR
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-NORMAL = 'NORMAL'
-SHUFFLE = 'SHUFFLE'
-LOOP = 'LOOP'
-REPEAT = 'REPEAT'
-PLAYBACK_STATES = cycle((NORMAL, SHUFFLE, LOOP, REPEAT))
+PLAYBACK_STATES = cycle(STATES)
 
 
 class Volume(object):
@@ -53,6 +53,7 @@ class SongList(object):
         self.list = self.db.get_list(self.filters)
         self.page_size = page_size
         self.song_counter = 0
+        self.page = 0  # Only incremented or set when you get a page of that number
 
     def __len__(self):
         return len(self.list)
@@ -61,55 +62,51 @@ class SongList(object):
         return self.list[self.song_counter]
 
     def get_next_id(self, state):
-        if state in (NORMAL, LOOP):
+        if state in (STATES.NORMAL, STATES.LOOP):
             # Go to the next song in the list
             self.song_counter += 1
 
-        if state == LOOP:
+        if state == STATES.LOOP:
             # Wrap around
             self.song_counter %= len(self.list)
 
-        elif state == REPEAT:
+        elif state == STATES.REPEAT:
             # Play the same song over and over
             pass
 
-        elif state == SHUFFLE:
+        elif state == STATES.SHUFFLE:
             # Get a random new song ID that isn't the current one
             old = self.song_counter
             new = random.randint(0, len(self.list) - 1)
             while len(self.list) > 1 and old != new:
                 # Make sure that we're getting a new song
                 # ID if there is a new one to get
-                # Worst case O(inf), average case O(1)
+                # Worst case O(inf), expected case O(1)
                 new = random.randint(0, len(self.list) - 1)
             self.song_counter = new
 
-        return self.list[self.song_counter]
+        out_id = self.list[self.song_counter] if self.song_counter < len(self.list) else None
+        return out_id
 
     def get_prev_id(self, state):
-        if state == NORMAL and self.song_counter > 0:
+        if state == STATES.NORMAL:
             self.song_counter -= 1
 
-        elif state == LOOP:
+        elif state == STATES.LOOP:
             self.song_counter -= 1
             self.song_counter %= len(self.list)
 
-        elif state == REPEAT:
+        elif state == STATES.REPEAT:
             pass
 
-        elif state == SHUFFLE:
+        elif state == STATES.SHUFFLE:
             # Random is random :)
-            return self.get_next_id(SHUFFLE)
+            return self.get_next_id(STATES.SHUFFLE)
 
-        return self.list[self.song_counter]
+        out_id = self.list[self.song_counter] if self.song_counter >= 0 else None
+        return out_id
 
-    def get_paths(self):
-        return self.db.get_by_id(self.list, limit_clause='', paths=True)
-
-    def get_names(self):
-        return self.db.get_by_id(self.list, limit_clause='', titles=True)
-
-     def add_filter(self, artist=None, album=None):
+    def add_filter(self, artist=None, album=None):
         if not artist and not album:
             logger.warn('Attempted to add an empty filter.  Ignoring')
 
@@ -119,7 +116,7 @@ class SongList(object):
             self.filters.append('album = {}'.format(album))
 
         logger.debug('Added filter, regenerating list')
-        self.list = self.library.get_playlist(self.filters)
+        self.list = self.db.get_list(self.filters)
 
         self.song_counter = 0
 
@@ -128,13 +125,14 @@ class SongList(object):
             p = self.filters.pop()
             logger.debug('Popped the following filter: {}'.format(p))
             logger.debug('Removed filter, regenerating playlist')
-            self.list = self.library.get_playlist(self.filters)
+            self.list = self.db.get_list(self.filters)
             self.song_counter = 0
 
         else:
             logger.error('Tried to remove filter from empty filter list')
 
     def get_paginated_names(self, page):
+        self.page = page
         # There are probably off-by-one-errors here
         offset = len(self.list) // (self.page_size * page) if page > 0 else 0
         limit_clause = 'LIMIT {row_count} OFFSET {offset}'.format(row_count=self.page_size,
@@ -142,31 +140,18 @@ class SongList(object):
         return self.db.get_by_id(self.list, limit_clause=limit_clause, titles=True)
 
 
-class Library(object):
-    def __init__(self, music_config):
-        logger.debug('Initializing the library')
-        self.music_config = music_config
-        self.db = Database(self.music_config)
-
-    def get_playlist(self, filters):
-        return self.db.get_list(filters)
-
-    def get_path_by_id(self, song_id):
-        raise NotImplementedError
-
-
 class Model(object):
     def __init__(self, config):
-        self.library = Library(config['music'])
+        self.db = Database(config['music'])
         self.volume = Volume()
 
         self.playback_state = PLAYBACK_STATES.next()
 
         # Initializing playlist with all songs-- should probably change
-        self.playlist = self.library.get_playlist(filters=[])
+        self.playlist = self.db.get_list(filters=[])
 
-        self.playlist = SongList(db=self.library.db)
-        self.viewlist = SongList(db=self.library.db, page_size=config['page_size'])
+        self.playlist = SongList(db=self.db)
+        self.viewlist = SongList(db=self.db, page_size=config['page_size'])
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist
@@ -185,4 +170,27 @@ class Model(object):
         self.playback_state = PLAYBACK_STATES.next()
         logger.debug('... and is now {}'.format(self.playback_state))
 
+    def get_path(self, song_ids):
+        # Gets the path or paths for one or more songs
+        if song_ids is not None:
+            return self.db.get_by_id(song_ids, paths=True)
 
+    def get_names(self, song_ids):
+        if song_ids is not None:
+            return self.db.get_by_id(song_ids, titles=True)
+
+    def get_first_song_path(self):
+        logger.debug('Getting the first song')
+        first_id = self.playlist.get_first_id()
+        logger.debug('First song id is: {}'.format(first_id))
+        return self.db.get_by_id(first_id, paths=True)[0]
+
+    def get_next_song(self, direction):
+        if direction == DIR.FORWARD:
+            next_id = self.playlist.get_next_id(state=self.playback_state)
+        elif direction == DIR.BACKWARD:
+            next_id = self.playlist.get_prev_id(state=self.playback_state)
+
+        next_song = self.get_path(next_id)
+        if next_song:
+            return next_song[0]
