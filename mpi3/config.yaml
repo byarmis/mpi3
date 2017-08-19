@@ -5,6 +5,7 @@ font:
 screen_size:
   width: 96
   height: 200
+page_size: 13
 music:
   directory:
     - ~/Music/

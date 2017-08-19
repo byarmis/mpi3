@@ -9,28 +9,16 @@ import re
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
+from mpi3.model.SQL import (
+    CREATE_LIBRARY,
+    INSERT_SONGS,
+    GET_PLAYLIST,
+    GET_BY_ID,
+    GET_COUNT
+)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-CREATE_LIBRARY = '''
-CREATE TABLE library (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT
-    , filepath       TEXT UNIQUE NOT NULL
-    , length         INTEGER
-    , title          TEXT
-    , sortable_title TEXT
-    , album          TEXT
-    , artist         TEXT
-    , track_number   INTEGER
-    , total_tracks   INTEGER
-);
-'''
-
-INSERT_SONGS = '''
-INSERT INTO library 
-  (filepath, length, title, sortable_title, album, artist, track_number, total_tracks) 
-VALUES (?,?,?,?,?,?,?,?);
-'''
 
 
 class OpenConnection(object):
@@ -128,11 +116,13 @@ class Database(object):
         self.dirs = config['directory']
         self.db_file = config['library']
         self.adder = BatchAdder(config)
+        self.count = 0
 
         self._library_size = None
 
         self.create_db()
         self.scan_libraries()
+        self.get_count()
 
     def create_db(self):
         if os.path.isfile(self.db_file):
@@ -160,7 +150,45 @@ class Database(object):
 
                         self.adder.add(os.path.join(dirpath, f))
 
+    def get_count(self):
         with OpenConnection(self.db_file) as db:
-            self._library_size = db.execute('SELECT count(*) FROM library;').fetchone()[0]
+            c = db.execute(GET_COUNT).fetchall()[0][0]
+        self.count = int(c)
 
-        logger.info('{} music files added'.format(self._library_size))
+    def get_list(self, filters):
+        filter_statement = 'WHERE {}'.format('AND '.join(filters)) if filters else ''
+        if filters and any('album' in f for f in filters):
+            logger.debug('Songs should be sorted by track number')
+
+            # TODO: Multi-disk albums?
+            order_by = 'track_number ASC'
+        else:
+            logger.debug('Songs should be sorted alphabetically')
+            order_by = 'sortable_title ASC'
+
+        with OpenConnection(self.db_file) as db:
+            p = db.execute(GET_PLAYLIST.format(filter_statement=filter_statement,
+                                               order_by=order_by)).fetchall()
+            p = [i[0] for i in p]
+
+        logger.debug('Retrieved following playlist: {}'.format(p))
+        return p
+
+    def get_by_id(self, ids, limit_clause, paths=False, titles=False):
+        if paths:
+            logger.debug('Getting paths by ID')
+            get_type = 'filepath'
+        elif titles:
+            logger.debug('Getting titles by ID')
+            get_type = 'title'
+        else:
+            raise ValueError('Paths or titles have to be passed')
+
+        with OpenConnection(self.db_file) as db:
+            res = db.execute(GET_BY_ID.format(get_type=get_type,
+                                              limit_clause=limit_clause), (ids,)).fetchall()[0]
+            # Should return ((3, 'path'),(4,'path')...)
+
+        id_to_str = dict(res)
+        logger.debug('Data acquired: {}'.format(res))
+        return [id_to_str[i] for i in ids]
