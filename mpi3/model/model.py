@@ -49,7 +49,7 @@ class Volume(object):
 class SongList(object):
     def __init__(self, db, filters=None, page_size=1):
         self.db = db
-        self.filters = filters if filters is not None else []
+        self.filters = filters or dict()
         self.list = self.db.get_list(self.filters)
         self.page_size = page_size
         self.song_counter = 0
@@ -111,25 +111,26 @@ class SongList(object):
             logger.warn('Attempted to add an empty filter.  Ignoring')
 
         if artist:
-            self.filters.append('artist = {}'.format(artist))
+            self.filters['artist'] = artist
         if album:
-            self.filters.append('album = {}'.format(album))
+            self.filters['album'] = album
 
         logger.debug('Added filter, regenerating list')
         self.list = self.db.get_list(self.filters)
 
         self.song_counter = 0
 
-    def remove_filter(self):
-        if self.filters:
-            p = self.filters.pop()
-            logger.debug('Popped the following filter: {}'.format(p))
+    def remove_filter(self, key):
+        try:
+            v = self.filters.pop(key)
+            logger.debug('Popped the following filter: {}'.format(v))
             logger.debug('Removed filter, regenerating playlist')
             self.list = self.db.get_list(self.filters)
             self.song_counter = 0
 
-        else:
+        except KeyError as e:
             logger.error('Tried to remove filter from empty filter list')
+            raise e
 
     def get_paginated_names(self, page):
         self.page = page
@@ -186,6 +187,7 @@ class Model(object):
         return self.db.get_by_id(first_id, paths=True)[0]
 
     def get_next_song(self, direction):
+        next_id = None
         if direction == DIR.FORWARD:
             next_id = self.playlist.get_next_id(state=self.playback_state)
         elif direction == DIR.BACKWARD:

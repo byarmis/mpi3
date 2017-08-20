@@ -155,9 +155,14 @@ class Database(object):
             c = db.execute(GET_COUNT).fetchall()[0][0]
         self.count = int(c)
 
-    def get_list(self, filters):
-        filter_statement = 'WHERE {}'.format('AND '.join(filters)) if filters else ''
-        if filters and any('album' in f for f in filters):
+    def get_list(self, filters=None):
+        if filters:
+            filter_list = ['{} = {}'.format(k, v) for k, v in filters.iteritems()]
+            filter_statement = 'WHERE {}'.format('AND '.join(filters))
+        else:
+            filter_statement = ''
+
+        if filters and 'album' in filters:
             logger.debug('Songs should be sorted by track number')
 
             # TODO: Multi-disk albums?
