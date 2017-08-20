@@ -2,19 +2,43 @@
 
 import logging
 import random
+from collections import namedtuple
 from itertools import cycle
 from subprocess import call
 
 from mpi3.model.db import Database
 from constants import (
-    PLAYBACK_STATES as STATES,
     DIRECTION as DIR
 )
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-PLAYBACK_STATES = cycle(STATES)
+
+class PlaybackStates(object):
+    def __init__(self):
+        _state_list = ['NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT']
+        _states = namedtuple('PLAYBACK_STATES', _state_list)
+        self.mapping = {'NORMAL': ' ',
+                        'SHUFFLE': 'X',
+                        'LOOP': 'O',
+                        'REPEAT': 'o'}
+
+        self.iterator = cycle(_states(*_state_list))
+        self.state = self.iterator.next()
+
+    def next(self):
+        self.state = self.iterator.next()
+        return self.state
+
+    def __str__(self):
+        return self.mapping[self.state]
+
+    def __repr__(self):
+        return self.state
+
+    def __eq__(self, other):
+        return self.state == other
 
 
 class Volume(object):
@@ -22,6 +46,9 @@ class Volume(object):
         logger.debug('Initializing volume object')
         self.val = 2
         self.set_volume(self.val)
+
+    def __str__(self):
+        return str(self.get)
 
     @property
     def increase(self):
@@ -62,19 +89,19 @@ class SongList(object):
         return self.list[self.song_counter]
 
     def get_next_id(self, state):
-        if state in (STATES.NORMAL, STATES.LOOP):
+        if state in ('NORMAL', 'LOOP'):
             # Go to the next song in the list
             self.song_counter += 1
 
-        if state == STATES.LOOP:
+        if state == 'LOOP':
             # Wrap around
             self.song_counter %= len(self.list)
 
-        elif state == STATES.REPEAT:
+        elif state == 'REPEAT':
             # Play the same song over and over
             pass
 
-        elif state == STATES.SHUFFLE:
+        elif state == 'SHUFFLE':
             # Get a random new song ID that isn't the current one
             old = self.song_counter
             new = random.randint(0, len(self.list) - 1)
@@ -89,19 +116,19 @@ class SongList(object):
         return out_id
 
     def get_prev_id(self, state):
-        if state == STATES.NORMAL:
+        if state == 'NORMAL':
             self.song_counter -= 1
 
-        elif state == STATES.LOOP:
+        elif state == 'LOOP':
             self.song_counter -= 1
             self.song_counter %= len(self.list)
 
-        elif state == STATES.REPEAT:
+        elif state == 'REPEAT':
             pass
 
-        elif state == STATES.SHUFFLE:
+        elif state == 'SHUFFLE':
             # Random is random :)
-            return self.get_next_id(STATES.SHUFFLE)
+            return self.get_next_id('SHUFFLE')
 
         out_id = self.list[self.song_counter] if self.song_counter >= 0 else None
         return out_id
@@ -146,7 +173,7 @@ class Model(object):
         self.db = Database(config['music'])
         self.volume = Volume()
 
-        self.playback_state = PLAYBACK_STATES.next()
+        self.playback_state = PlaybackStates()
 
         # Initializing playlist with all songs-- should probably change
         self.playlist = self.db.get_list(filters=[])
@@ -168,7 +195,7 @@ class Model(object):
 
     def next_playback_state(self):
         logger.debug('Playback state was: {}...'.format(self.playback_state))
-        self.playback_state = PLAYBACK_STATES.next()
+        self.playback_state = self.playback_state.next()
         logger.debug('... and is now {}'.format(self.playback_state))
 
     def get_path(self, song_ids):
