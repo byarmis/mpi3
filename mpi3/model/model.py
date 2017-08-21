@@ -48,11 +48,14 @@ class Volume(object):
         self.set_volume(self.val)
 
     def __str__(self):
-        return str(self.get)
+        if self.get == 100:
+            return '99'
+        else:
+            return '{:02.0f}'.format(self.get)
 
     @property
     def increase(self):
-        if self.val < 19:
+        if self.val < 20:
             self.val += 1
         self.set_volume(self.val)
         return self.get

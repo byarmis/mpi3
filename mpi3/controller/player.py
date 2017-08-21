@@ -18,8 +18,10 @@ class Player(object):
         logger.debug('Initializing player')
         self.config = initialize.get_config()
         self.model = Model(self.config)
-        self.view = View(self.config)
         self.volume = self.model.volume
+        self.view = View(config=self.config,
+                         playback_state=self.model.playback_state,
+                         volume=self.model.volume)
 
         self.button_mode = MODE.NORMAL
 
