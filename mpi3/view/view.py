@@ -5,6 +5,29 @@ from datetime import datetime as dt
 
 from papirus import Papirus
 
+# TODO: Create decorator that triggers a redraw after function is called
+# Have to make sure that if multiple functions are called that trigger a 
+# redraw after they're done, there's only one resulting redraw
+
+# TODO: ABC for menu item.  Must implement `render` method
+
+# View: Everything dealing with stuff on the screen
+# Screen: What's on the screen at the moment
+# Menu: What can be shown on the screen by scrolling up / down and what happens on interaction
+# Button: A line item on the screen that can be clicked 
+    # Not necessary to be  clicked-- informational buttons that just show info without doing anything on click.
+    # Maybe even skip over them in navigation.  Show with italics?
+# Menu structure: The parent / children menus of the current menu-- can be done dynamically without having to pre-generate everything
+
+
+def _get_color(config, black=False, white=False):
+    if black:
+        return config['colors']['black'] 
+    elif white:
+        return config['colors']['white']
+    else:
+        raise ValueError('Pick either black or white')
+
 
 class View(object):
     def __init__(self, playback_state, volume, config):
@@ -15,14 +38,11 @@ class View(object):
         self.screen_size = (self.config['screen_size']['width'],
                             self.config['screen_size']['height'])
 
-        # TODO: Change \/ ?
-        self.title_font = ImageFont.truetype(os.path.expanduser(self.config['font']['dir']),
-                                             self.config['font']['title_size'])
-        self.font = ImageFont.truetype(os.path.expanduser(self.config['font']['dir']),
-                                       self.config['font']['size'])
+        self.title_font = _get_font(self.config['font']['dir'], self.config['font']['title_size'])
+        self.font = _get_font(self.config['font']['dir'], self.config['font']['size'])
 
-        self.WHITE = self.config['colors']['white']
-        self.BLACK = self.config['colors']['black']
+        self.WHITE = _get_color(config, white=True)
+        self.BLACK = _get_color(config, black=True)
 
         self.papirus = Papirus(rotation=90)
         self.image = Image.new('1', self.screen_size, self.WHITE)
@@ -30,12 +50,15 @@ class View(object):
 
         self.cursor = Cursor(config, draw=self.draw, font=self.font)
 
+    def _get_font(font_dir, font_size):
+        return ImageFont.truetype(os.path.expanduser(font_dir, font_size)
+
 
 class Cursor:
     def __init__(self, config, draw, font):
         self.tfont_size = config['font']['title_size']
         self.font_size = config['font']['size']
-        self.BLACK = config['colors']['black']
+        self.BLACK = _get_color(config, black=True)
 
         self.draw = draw
         self.font = font
@@ -58,12 +81,13 @@ class Cursor:
 
 
 class Title(object):
-    def __init__(self, state, vol, draw, font):
+    def __init__(self, config, state, vol, draw, font):
         self.state = state
         self.vol = vol
 
         self.draw = draw
         self.font = font
+        self.BLACK = _get_color(config, black=True)
 
     @property
     def time(self):
@@ -75,7 +99,7 @@ class Title(object):
                                                  vol=self.vol)
 
     def draw_title(self):
-        self.draw.text((0, 0), str(self), font=self.font)
+        self.draw.text((0, 0), str(self), font=self.font, fill=self.BLACK)
 
 
 class Screen:
