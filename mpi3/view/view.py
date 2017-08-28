@@ -4,6 +4,7 @@ import os
 from datetime import datetime as dt
 
 from papirus import Papirus
+from mpi3.model.constants import CURSOR_DIR
 
 # TODO: Create decorator that triggers a redraw after function is called
 # Have to make sure that if multiple functions are called that trigger a 
@@ -73,11 +74,13 @@ class Cursor:
         self.y = self._get_y()
         self.draw.text((0, self.y), '>', font=self.font, fill=self.BLACK)
 
-    def move_cursor(self, direction, reset=False):
+    def move(self, direction=None, reset=False):
         if reset:
             self.value = 1
-        else:
+        elif direction:
             self.value += direction
+        else:
+            raise ValueError('Must pass either reset (T/F) or direction')
 
 
 class Title(object):
