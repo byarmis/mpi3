@@ -223,6 +223,7 @@ class Model(object):
         elif direction == DIR.BACKWARD:
             next_id = self.playlist.get_prev_id(state=self.playback_state)
 
-        next_song = self.get_path(next_id)
-        if next_song:
-            return next_song[0]
+        return next_id
+        # next_song = self.get_path(next_id)
+        # if next_song:
+            # return next_song[0]

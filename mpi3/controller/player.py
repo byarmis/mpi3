@@ -21,7 +21,9 @@ class Player(object):
         self.volume = self.model.volume
         self.view = View(config=self.config,
                          playback_state=self.model.playback_state,
-                         volume=self.model.volume)
+                         volume=self.model.volume,
+                         play_song=self.play_song,
+                         transfer_func=self.model.transfer_viewlist_to_playlist)
 
         self.button_mode = MODE.NORMAL
 
@@ -51,7 +53,7 @@ class Player(object):
         next_song = self.model.get_next_song(direction)
 
         if next_song:
-            logger.debug("Next song's path is: {}".format(next_song))
+            logger.debug("Next song's id is: {}".format(next_song))
             logger.debug('Playing next song')
             self.play_song(next_song)
             logger.debug('Playing next song started')
@@ -60,7 +62,9 @@ class Player(object):
             logger.debug("There isn't a next song to play.  Stopping")
             self.stop()
 
-    def play_song(self, song_path):
+    def play_song(self, song_id):
+        # Plays song by ID
+        song_path = self.model.get_path(song_id)
         if self.is_playing:
             logger.debug('Stopping current song')
             self.stop()

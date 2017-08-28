@@ -2,6 +2,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 from datetime import datetime as dt
+from abc import ABCMeta, abstractmethod
 
 from papirus import Papirus
 from mpi3.model.constants import CURSOR_DIR
@@ -20,6 +21,16 @@ from mpi3.model.constants import CURSOR_DIR
     # Maybe even skip over them in navigation.  Show with italics?
 # Menu structure: The parent / children menus of the current menu-- can be done dynamically without having to pre-generate everything
 
+class ViewItem(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def render(self):
+        pass
 
 def _get_color(config, black=False, white=False):
     if black:
@@ -29,12 +40,59 @@ def _get_color(config, black=False, white=False):
     else:
         raise ValueError('Pick either black or white')
 
+class Button(ViewItem):
+    # A line item on the screen that can optionally be clicked
+    def __init__(self, draw, font, text):
+        self.draw = draw
+        self.font = font
+        self.text = text
+
+    def __str__(self):
+        return self.text
+
+    def render(self, offset):
+        self.draw.text((0, offset), ' '+str(self), font=self.font, fill=self.BLACK)
+
+    def on_click(self):
+        pass
+
+class SongButton(Button):
+    def __init__(self, draw, font, text, song_id, play_song, transfer_func):
+        super(MenuButton, self).__init__(draw, font)
+        self.button_type = 'SONG'
+        self.play_song = play_song
+        self.song_id = song_id
+        self.transfer_lists = transfer_func
+
+    def on_click(self):
+        # Play by song ID
+        self.play_song(self.song_id)
+
+        # Set the view list to be the play list
+        self.transfer_lists()
+
+
+class MenuButton(Button):
+    def __init__(self, draw, font, offset, text, button_type):
+        super(MenuButton, self).__init__(draw, font, offset)
+        self.button_type = button_type
+
+    def on_click(self):
+        if self.button_type == 'ALBUM':
+            # Show the album
+            pass
+        elif self.button_type == 'ARTIST':
+            # Show the artist
+            pass
+        elif self.button_type == 'MENU':
+            # Go into the menu
+            pass
+
+
 
 class View(object):
-    def __init__(self, playback_state, volume, config):
+    def __init__(self, playback_state, volume, config, play_song, transfer_func):
         self.config = config
-        self.playback_state = playback_state
-        self.vol = volume
 
         self.screen_size = (self.config['screen_size']['width'],
                             self.config['screen_size']['height'])
@@ -48,14 +106,20 @@ class View(object):
         self.papirus = Papirus(rotation=90)
         self.image = Image.new('1', self.screen_size, self.WHITE)
         self.draw = ImageDraw.Draw(self.image)
+        self._play_song = play_song
+        self._transfer_func = transfer_func
 
-        self.cursor = Cursor(config, draw=self.draw, font=self.font)
+        self.cursor = 
+        self.to_render = [
+                Cursor(config, draw=self.draw, font=self.font),
+                Title(config, state=playback_state, vol=volume, draw=self.draw, font=self.title_font)
+                ]
 
     def _get_font(font_dir, font_size):
         return ImageFont.truetype(os.path.expanduser(font_dir, font_size)
 
 
-class Cursor:
+class Cursor(ViewItem):
     def __init__(self, config, draw, font):
         self.tfont_size = config['font']['title_size']
         self.font_size = config['font']['size']
@@ -70,7 +134,7 @@ class Cursor:
     def _get_y(self):
         return self.tfont_size + (self.font_size * self.value)
 
-    def draw_cursor(self):
+    def render(self):
         self.y = self._get_y()
         self.draw.text((0, self.y), '>', font=self.font, fill=self.BLACK)
 
@@ -83,7 +147,7 @@ class Cursor:
             raise ValueError('Must pass either reset (T/F) or direction')
 
 
-class Title(object):
+class Title(ViewItem):
     def __init__(self, config, state, vol, draw, font):
         self.state = state
         self.vol = vol
@@ -101,7 +165,7 @@ class Title(object):
                                                  time=self.time,
                                                  vol=self.vol)
 
-    def draw_title(self):
+    def render(self):
         self.draw.text((0, 0), str(self), font=self.font, fill=self.BLACK)
 
 
