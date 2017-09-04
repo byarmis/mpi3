@@ -64,11 +64,12 @@ class Player(object):
 
     def play_song(self, song_id):
         # Plays song by ID
-        song_path = self.model.get_path(song_id)
+        song_path = self.model.get_path(song_id)[0]
         if self.is_playing:
             logger.debug('Stopping current song')
             self.stop()
 
+        logger.debug('Playing {}'.format(song_path))
         self.process.stdin.write('LOAD {}\n'.format(song_path))
         self.is_playing = True
 
@@ -152,7 +153,7 @@ class Player(object):
 
         logger.debug('Playing music started')
 
-        first_song = self.model.get_first_song_path()
+        first_song = self.model.get_first_song_id()
         logger.debug('Trying to play: {}'.format(first_song))
         self.play_song(first_song)
         while self.model.has_songs_in_playlist:

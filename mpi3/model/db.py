@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+class NoSong(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 class OpenConnection(object):
     def __init__(self, db_file):
         self.db_file = db_file
@@ -158,7 +166,7 @@ class Database(object):
     def get_list(self, filters=None):
         if filters:
             filter_list = ['{} = {}'.format(k, v) for k, v in filters.iteritems()]
-            filter_statement = 'WHERE {}'.format('AND '.join(filters))
+            filter_statement = 'WHERE {}'.format('AND '.join(filter_list))
         else:
             filter_statement = ''
 
@@ -190,12 +198,14 @@ class Database(object):
             raise ValueError('Paths or titles have to be passed')
 
         with OpenConnection(self.db_file) as db:
-            res = db.execute(GET_BY_ID.format(get_type=get_type,
-                                              limit_clause=limit_clause), (ids,)).fetchall()[0]
-            # Should return ((3, 'path'), (4,'path')...)
-            # or ((3, 'name'), (4, 'name')...)
+            try:
+                res = db.execute(GET_BY_ID.format(get_type=get_type,
+                                                  limit_clause=limit_clause), (ids,)).fetchall()[0]
+                # Should return ((3, 'path'), (4,'path')...)
+                # or ((3, 'name'), (4, 'name')...)
+            except IndexError:
+                raise NoSong('No songs found for {} = [{}]'.format(get_type, ','.join(ids)))
 
-        logger.debug('Data acquired: {}'.format(res))
         if len(res) == 2:
             id_to_str = {res[0]: res[1]}
         else:

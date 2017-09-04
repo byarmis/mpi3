@@ -210,11 +210,11 @@ class Model(object):
         if song_ids is not None:
             return self.db.get_by_id(song_ids, titles=True)
 
-    def get_first_song_path(self):
+    def get_first_song_id(self):
         logger.debug('Getting the first song')
         first_id = self.playlist.get_first_id()
         logger.debug('First song id is: {}'.format(first_id))
-        return self.db.get_by_id(first_id, paths=True)[0]
+        return first_id
 
     def get_next_song(self, direction):
         next_id = None
