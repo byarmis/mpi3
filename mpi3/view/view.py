@@ -108,21 +108,24 @@ class MenuButton(Button):
 
 
 class Renderer(object):
-    def __init__(self, draw, config, targets, papirus):
+    def __init__(self, draw, image, config, targets, papirus):
         self.draw = draw
+        self.image = image
         self.size = _get_screen_size(config)
         self.WHITE = _get_color(config=config, white=True)
         self.targets = targets
         self.papirus = papirus
 
         self.partial_update = False
-        self.render()
 
     def render(self):
-        logger.debug('Rendering')
         self.blank()
+        logger.debug('Rendering')
         for t in self.targets:
+            logger.debug('\t{}'.format(repr(t)))
             t.render()
+
+        self.papirus.display(self.image)
 
         self.update()
 
@@ -159,15 +162,17 @@ class View(object):
         self._play_song = play_song
         self._transfer_func = transfer_func
 
-        self.cursor = Cursor(config, draw=self.draw, font=self.font)
-        self.renderer = Renderer(self.draw, config, papirus=self.papirus,
+        self._title = Title(config=config, state=playback_state, vol=volume, draw=self.draw, font=self.title_font)
+        self._cursor = Cursor(config, draw=self.draw, font=self.font)
+
+        self.renderer = Renderer(image=self.image, draw=self.draw,
+                                 config=config, papirus=self.papirus,
                                  targets=[
-                                     self.cursor,
-                                     Title(config, state=playback_state, vol=volume, draw=self.draw,
-                                           font=self.title_font)
+                                     self._cursor,
+                                     self._title
                                  ])
 
-        self.cursor.set_rendering_engine(self.renderer)
+        self._cursor.set_rendering_engine(self.renderer)
 
     @staticmethod
     def _get_font(font_dir, font_size):
@@ -196,10 +201,13 @@ class Cursor(ViewItem):
 
     def render(self):
         self.y = self._get_y()
-        self.draw.text((0, self.y), '>', font=self.font, fill=self.BLACK)
+        self.draw.text((0, self.y), str(self), font=self.font, fill=self.BLACK)
 
     def __repr__(self):
         return 'CURSOR'
+
+    def __str__(self):
+        return '>'
 
     def move(self, direction=None, reset=False):
         if reset:

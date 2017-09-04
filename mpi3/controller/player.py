@@ -25,6 +25,8 @@ class Player(object):
                          play_song=self.play_song,
                          transfer_func=self.model.transfer_viewlist_to_playlist)
 
+        self.view.renderer.render()
+
         self.button_mode = MODE.NORMAL
 
         self.is_playing = False
