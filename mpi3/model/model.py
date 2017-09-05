@@ -15,6 +15,19 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+class Song(object):
+    def __init__(self, song_id):
+        self.id = song_id
+        self.title = None
+        self.path = None
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return self.path
+
+
 class PlaybackStates(object):
     def __init__(self):
         _state_list = ['NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT']
@@ -226,4 +239,4 @@ class Model(object):
         return next_id
         # next_song = self.get_path(next_id)
         # if next_song:
-            # return next_song[0]
+        # return next_song[0]

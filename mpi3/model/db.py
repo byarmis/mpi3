@@ -197,6 +197,7 @@ class Database(object):
         else:
             raise ValueError('Paths or titles have to be passed')
 
+        res = None
         with OpenConnection(self.db_file) as db:
             try:
                 res = db.execute(GET_BY_ID.format(get_type=get_type,
