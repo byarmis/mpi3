@@ -15,7 +15,7 @@ CREATE TABLE library (
 '''
 
 INSERT_SONGS = '''
-INSERT INTO library 
+INSERT OR IGNORE INTO library 
   (filepath, length, title, sortable_title, album, artist, track_number, total_tracks) 
 VALUES (?,?,?,?,?,?,?,?);
 '''

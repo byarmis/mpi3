@@ -8,7 +8,6 @@ _mode_list = ['NORMAL', 'VOLUME', 'PLAYBACK']
 _modes = namedtuple('BUTTON_MODE', _mode_list)
 BUTTON_MODE = _modes(*_mode_list)
 
-_cursor_dir_list = ['DOWN', 'UP']
-_cursor_dir = namedtuple('DIRECTION', _cursor_dir_list)
+_cursor_dir = namedtuple('DIRECTION', ['DOWN', 'UP'])
 CURSOR_DIR = _cursor_dir(DOWN=1, UP=-1)
 
