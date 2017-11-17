@@ -11,10 +11,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-# TODO: Create decorator that triggers a redraw after function is called
-# Have to make sure that if multiple functions are called that trigger a 
-# redraw after they're done, there's only one resulting redraw
-
 # View: Everything dealing with stuff on the screen
 # Screen: What's on the screen at the moment
 # Menu: What can be shown on the screen by scrolling up / down and what happens on interaction
@@ -36,7 +32,7 @@ class Renderer(object):
 
         self.partial_update = False
 
-    def render(self):
+    def render(self, partial=None):
         self.blank()
         logger.debug('Rendering')
         for t in self.targets:
@@ -45,15 +41,15 @@ class Renderer(object):
 
         self.papirus.display(self.image)
 
-        self.update()
+        self.update(partial=partial)
 
     def blank(self):
         logger.debug('Blanking')
         self.draw.rectangle((0, 0) + self.size, fill=self.WHITE, outline=self.WHITE)
 
-    def update(self):
-        logger.debug('Updating')
-        if self.partial_update:
+    def update(self, partial):
+        logger.debug('Updating ({})'.format('partially' if self.partial_update else 'completely'))
+        if self.partial_update or partial:
             self.papirus.partial_update()
         else:
             self.papirus.update()
@@ -90,7 +86,10 @@ class View(object):
                                      self._title
                                  ])
 
-        self._cursor.set_rendering_engine(self.renderer)
+    def move_cursor(self, direction=None, reset=False):
+        # TODO: Flesh out with menu/screen changing (w/ cursor resetting) and all that fun stuff
+        self._cursor.move(direction=direction, reset=reset)
+        self.renderer.render()
 
 # class Screen:
 #     def __init__(self, player):

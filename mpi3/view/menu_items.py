@@ -91,17 +91,11 @@ class Cursor(ViewItem):
         self.font = font
 
         self.value = 1
-        self.y = self._get_y()
-        self.rendering_engine = None
 
-    def _get_y(self):
+    def y(self):
         return self.tfont_size + (self.font_size * self.value)
 
-    def set_rendering_engine(self, renderer):
-        self.rendering_engine = renderer
-
     def render(self):
-        self.y = self._get_y()
         self.draw.text((0, self.y), str(self), font=self.font, fill=self.BLACK)
 
     def __repr__(self):
@@ -117,8 +111,6 @@ class Cursor(ViewItem):
             self.value += direction
         else:
             raise ValueError('Must pass either reset (T/F) or direction')
-
-        self.rendering_engine.render()
 
 
 class Title(ViewItem):

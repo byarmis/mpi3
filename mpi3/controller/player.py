@@ -7,7 +7,8 @@ from mpi3 import initialize
 from mpi3.model.model import Model
 from mpi3.view.view import View
 from mpi3.model.constants import (DIRECTION as DIR,
-                                  BUTTON_MODE as MODE)
+                                  BUTTON_MODE as MODE,
+                                  CURSOR_DIR as CDIR)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -84,7 +85,8 @@ class Player(object):
         logger.debug('UP')
 
         if self.button_mode == MODE.NORMAL:
-            pass
+            logger.debug('Moving up')
+            self.view.move_cursor(direction=CDIR.UP)
 
         elif self.button_mode == MODE.VOLUME:
             vol = self.volume.increase
@@ -98,8 +100,8 @@ class Player(object):
         logger.debug('DOWN')
 
         if self.button_mode == MODE.NORMAL:
-            logger.debug('Mode is NORMAL')
-            pass
+            logger.debug('Moving down')
+            self.view.move_cursor(direction=CDIR.DOWN)
 
         elif self.button_mode == MODE.VOLUME:
             logger.debug('Decreasing volume')
