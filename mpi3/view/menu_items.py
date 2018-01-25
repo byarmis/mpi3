@@ -98,6 +98,16 @@ class Cursor(ViewItem):
     def render(self):
         self.draw.text((0, self.y), str(self), font=self.font, fill=self.BLACK)
 
+    @property
+    def y(self):
+        logger.debug('Rendering cursor')
+        logger.debug('\tvalue:{}'.format(self.value))
+        logger.debug('\tfont size:{}'.format(self.font_size))
+        logger.debug('\ttfont size{}'.format(self.tfont_size))
+        y = (self.value * self.font_size) + self.tfont_size
+        logger.debug('\ty value:{}'.format(y))
+        return y
+
     def __repr__(self):
         return 'CURSOR'
 
