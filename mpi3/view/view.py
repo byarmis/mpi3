@@ -5,7 +5,7 @@ import logging
 from papirus import Papirus
 from mpi3.model.constants import CURSOR_DIR
 from utils import get_screen_size, get_color, get_font
-from menu_items import Title, Cursor
+from menu_items import Title, Cursor, Menu
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -77,19 +77,33 @@ class View(object):
         self._transfer_func = transfer_func
 
         self._title = Title(config=config, state=playback_state, vol=volume, draw=self.draw, font=self.title_font)
-        self._cursor = Cursor(config, draw=self.draw, font=self.font)
+        self._cursor = Cursor(config=config, draw=self.draw, font=self.font)
+        # self._menu = Menu(config=config, draw=self.draw, font=self.font, items=)
 
         self.renderer = Renderer(image=self.image, draw=self.draw,
                                  config=config, papirus=self.papirus,
-                                 targets=[
+                                 targets=(
                                      self._cursor,
                                      self._title
-                                 ])
+                                 ))
 
     def move_cursor(self, direction=None, reset=False):
         # TODO: Flesh out with menu/screen changing (w/ cursor resetting) and all that fun stuff
+
+        # Move the cursor in the direction
+
+        # Did it go outside bounds?
+
+        # If it did, reset it
+
+        # Go to the next menu page (+/- 1)
+
+        # If the menu went to the next page, rerender fully
+
+        # If the menu didn't (small number of items), partial update
         self._cursor.move(direction=direction, reset=reset)
         self.renderer.render()
+
 
 # class Screen:
 #     def __init__(self, player):
@@ -122,37 +136,3 @@ class View(object):
 #                                    outline=self.player.WHITE)
 #
 #
-# class Menu:
-#     def __init__(self, player, items, parent=None):
-#         self.items = items
-#         self.page_size = player.config['computed']['page_size']
-#         self.player = player
-#         self.paginated = [p for p in self.generate_pages()]
-#         self.page_val = 0
-#         self.parent = parent
-#
-#     def previous(self):
-#         print('Going to previous')
-#         return self.parent
-#
-#     def get_child(self, val):
-#         # Get the item in the list selected by the cursor
-#         print(self.paginated[self.page_val][val])
-#
-#     def generate_pages(self):
-#         for i in range(0, len(self.items), self.page_size):
-#             yield self.items[i:i + self.page_size]
-#
-#     @property
-#     def page(self):
-#         return self.paginated[self.page_val]
-#
-#     def get_coordinates(self, x):
-#         # Title plus back button
-#         font_size = self.player.config['font']['size']
-#         offset = self.player.config['font']['title_size'] + font_size
-#         return 0, (font_size * x) + offset
-#
-#     def draw_page(self):
-#         for loc, L in enumerate(self.page):
-#             self.player.draw.text(self.get_coordinates(loc), L, font=self.player.font, fill=self.player.BLACK)

@@ -21,14 +21,65 @@ class ViewItem(object):
         pass
 
 
+class Menu(ViewItem):
+    def __init__(self, config, player, items, parent=None):
+        super(Menu, self).__init__()
+
+        self.items = items
+        self.page_size = config['computed']['page_size']
+        self.player = player
+        self.paginated = self.generate_pages()
+        self.page_val = 0
+        self.parent = parent
+
+        self._back_button = Button(config, draw, font, text, on_click)
+        self.page = self.paginated.next()
+
+    def render(self):
+        logger.debug('Rendering menu')
+        for item in self.items:
+            item.render()
+
+    def __repr__(self):
+        return 'MENU'
+
+    #     def previous(self):
+    #         print('Going to previous')
+    #         return self.parent
+    #
+    #     def get_child(self, val):
+    #         # Get the item in the list selected by the cursor
+    #         print(self.paginated[self.page_val][val])
+    #
+    def generate_pages(self):
+        for i in range(0, len(self.items), self.page_size):
+            yield self.items[i:i + self.page_size]
+
+
+#
+#     @property
+#     def page(self):
+#         return self.paginated[self.page_val]
+#
+#     def get_coordinates(self, x):
+#         # Title plus back button
+#         font_size = self.player.config['font']['size']
+#         offset = self.player.config['font']['title_size'] + font_size
+#         return 0, (font_size * x) + offset
+#
+#     def draw_page(self):
+#         for loc, L in enumerate(self.page):
+#             self.player.draw.text(self.get_coordinates(loc), L, font=self.player.font, fill=self.player.BLACK)
+
 class Button(ViewItem):
     # A line item on the screen that can optionally be clicked
-    def __init__(self, draw, font, text, font_color):
-        super(Button, self).__init__(draw, font, text, font_color)
+    def __init__(self, config, draw, font, text, on_click=None):
+        super(Button, self).__init__()
         self.draw = draw
         self.font = font
         self.text = text
-        self.font_color = font_color
+        self.BLACK = get_color(config, black=True)
+        self._on_click = on_click
 
     def __repr__(self):
         return 'BUTTON: {}'.format(self.text)
@@ -37,15 +88,16 @@ class Button(ViewItem):
         return self.text
 
     def render(self, offset):
-        self.draw.text((0, offset), ' ' + str(self), font=self.font, fill=self.font_color)
+        self.draw.text((0, offset), ' ' + str(self), font=self.font, fill=self.BLACK)
 
     def on_click(self):
-        pass
+        if self._on_click is not None:
+            self._on_click()
 
 
 class SongButton(Button):
     def __init__(self, draw, font, text, font_color, song_id, play_song, transfer_func):
-        super(SongButton, self).__init__(draw, font, text, font_color)
+        super(SongButton, self).__init__()
         self.button_type = 'SONG'
         self.play_song = play_song
         self.song_id = song_id
@@ -92,21 +144,12 @@ class Cursor(ViewItem):
 
         self.value = 1
 
+    @property
     def y(self):
         return self.tfont_size + (self.font_size * self.value)
 
     def render(self):
         self.draw.text((0, self.y), str(self), font=self.font, fill=self.BLACK)
-
-    @property
-    def y(self):
-        logger.debug('Rendering cursor')
-        logger.debug('\tvalue:{}'.format(self.value))
-        logger.debug('\tfont size:{}'.format(self.font_size))
-        logger.debug('\ttfont size{}'.format(self.tfont_size))
-        y = (self.value * self.font_size) + self.tfont_size
-        logger.debug('\ty value:{}'.format(y))
-        return y
 
     def __repr__(self):
         return 'CURSOR'

@@ -2,6 +2,7 @@
 
 import logging
 import subprocess
+from threading import Event
 
 from mpi3 import initialize
 from mpi3.model.model import Model
@@ -41,6 +42,7 @@ class Player(object):
                                  volume=self.vol)
 
         self.initialize_mpg123()
+        logger.debug('Player initialization complete')
 
     def initialize_mpg123(self):
         self.process = subprocess.Popen(['mpg123', '--remote'],
@@ -155,6 +157,10 @@ class Player(object):
     def run(self):
         logger.debug('Running player')
 
+        while True:
+            Event().wait(1)
+
+        # START Testing
         logger.debug('Playing music started')
 
         first_song = self.model.get_first_song_id()
@@ -163,5 +169,7 @@ class Player(object):
         while self.model.has_songs_in_playlist:
             self.process.wait()
             self.change_song(direction=DIR.FORWARD)
+
+        # END Testing
 
         logger.debug('Running player-- complete')
