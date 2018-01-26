@@ -32,20 +32,20 @@ class PlaybackStates(object):
     def __init__(self):
         _state_list = ['NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT']
         _states = namedtuple('PLAYBACK_STATES', _state_list)
-        self.mapping = {'NORMAL': ' ',
-                        'SHUFFLE': 'X',
-                        'LOOP': 'O',
-                        'REPEAT': 'o'}
+        self._mapping = {'NORMAL': ' ',
+                         'SHUFFLE': 'X',
+                         'LOOP': 'O',
+                         'REPEAT': 'o'}
 
-        self.iterator = cycle(_states(*_state_list))
-        self.state = self.iterator.next()
+        self._iterator = cycle(_states(*_state_list))
+        self.state = self.next()
 
     def next(self):
-        self.state = self.iterator.next()
+        self.state = self._iterator.next()
         return self.state
 
     def __str__(self):
-        return self.mapping[self.state]
+        return self._mapping[self.state]
 
     def __repr__(self):
         return self.state
@@ -55,38 +55,50 @@ class PlaybackStates(object):
 
 
 class Volume(object):
+    #  0   2  4  6  8
+    # {10} 20 30 40 50
+    #  60  70 80 90 100
+
     def __init__(self):
+        # There are 15 incremental volume steps, starts at 10
+        # I want it to be able to get fairly quiet without having too many steps
         logger.debug('Initializing volume object')
-        self.val = 2
-        self.set_volume(self.val)
+        self._array = range(0, 10, 2) + range(10, 110, 10)
+        self._ptr = 5
+        self.set_volume()
 
     def __str__(self):
-        if self.get == 100:
-            return '99'
+        if self.val == 100:
+            return '/\\'  # Max
+        elif self.val == 0:
+            return '\/'  # Min
         else:
-            return '{:02.0f}'.format(self.get)
+            return '{:02.0f}'.format(self._ptr / len(self._array))
+
+    def _change_val(self, amt):
+        try:
+            self._ptr += amt
+            self.set_volume()
+
+        except IndexError:
+            self._ptr -= amt
+        return self.val
+
+    @property
+    def val(self):
+        return self._array[self._ptr]
 
     @property
     def increase(self):
-        if self.val < 20:
-            self.val += 1
-        self.set_volume(self.val)
-        return self.get
+        return self._change_val(1)
 
     @property
     def decrease(self):
-        if self.val > 1:
-            self.val -= 1
-        self.set_volume(self.val)
-        return self.get
+        # TODO: Mute vs 0%?  How's the noise?
+        return self._change_val(-1)
 
-    @property
-    def get(self):
-        return self.val * 5
-
-    def set_volume(self, val):
-        self.val = val
-        call(['amixer', 'sset', 'Master', '{}%'.format(self.get)])
+    def set_volume(self):
+        call(['amixer', 'sset', 'Master', '{}%'.format(self._array[self._ptr])])
 
 
 class SongList(object):

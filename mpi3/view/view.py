@@ -5,7 +5,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 from papirus import Papirus
 from mpi3.model.constants import CURSOR_DIR
-from utils import get_screen_size, get_color, RenderHelper
 from menu_items import Title, Cursor
 from mpi3.model.navigation import MenuStack
 
@@ -46,11 +45,13 @@ class Renderer(object):
 
     def render_title(self):
         logger.debug('Rendering title')
-        self._draw.text((0, 0), self.title, font=self.tfont, fill=self.BLACK)
+        self._draw.text((0, 0), self.title,
+                        font=self.tfont, fill=self.BLACK)
 
     def render_cursor(self):
         logger.debug('Rendering cursor')
-        self._draw.text((0, self.cursor.value * self.font + self.tfont), self.cursor, font=self.font, fill=self.BLACK)
+        self._draw.text((0, (self.cursor.value * self.font.size) + self.tfont.size), self.cursor,
+                        font=self.font, fill=self.BLACK)
 
     def render(self, partial=None):
         self.blank()
@@ -61,8 +62,9 @@ class Renderer(object):
         offset = self.tfont.size
 
         for item in self.menu:
-            logger.debug('\t{}'.format(repr(i)))
-            self._draw.text((0, offset), item, font=self.font, fill=self.BLACK)
+            logger.debug('\t{}'.format(repr(item)))
+            self._draw.text((0, offset), ' ' + item,
+                            font=self.font, fill=self.BLACK)
 
             offset += self.font.size
 
@@ -91,16 +93,16 @@ class View(object):
         self.papirus = Papirus(rotation=90)
         self.papirus.clear()
 
-        self.screen_size = get_screen_size(config)
+        self.screen_size = (config['screen_size']['width']
+                            , config['screen_size']['height'])
 
         font_dir = self.config['font']
-        font_size = self.config['font']['size']
-        tfont_size = self.config['font']['title_size']
-        get_font = lambda font_dir, size: ImageFont.truetype(os.path.expanduser(font_dir), size)
+
+        def get_font(s): return ImageFont.truetype(os.path.expanduser(font_dir), s)
 
         render_options = {
-            'font': get_font(font_dir, font_size),
-            'tfont': get_font(font_dir, tfont_size),
+            'font': get_font(self.config['font']['size']),
+            'tfont': get_font(self.config['font']['title_size']),
             'white': config['colors']['white'],
             'black': config['colors']['black'],
             'papirus': self.papirus,

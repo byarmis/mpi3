@@ -3,8 +3,6 @@ from abc import ABCMeta, abstractmethod
 import logging
 from datetime import datetime as dt
 
-from utils import get_color
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
