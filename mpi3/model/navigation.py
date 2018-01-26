@@ -1,7 +1,7 @@
 #!/bin/python
 
-from mpi3.view.menu_items import ViewItem
 import logging
+from mpi3.view.menu_items import ViewItem, MenuButton, SongButton
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,22 +32,32 @@ class Menu(ViewItem):
         super(Menu, self).__init__()
 
         self.config = render_helper.config
-        self.items = items or []
-        self.page_size = self.config['computed']['page_size']
-        self.paginated = self.generate_pages()
-        self.page_val = 0
-        self.home = home
-
         self.render_helper = render_helper
         self.draw = self.render_helper.draw
         self.font = self.render_helper.font
 
+        if home:
+            self.items = [MenuButton(render_helper=self.render_helper
+                                     , button_type='MENU'
+                                     , text=' Music'),
+                          SongButton(song_id=1, render_helper=render_helper,
+                                     play_song=lambda x: x, transfer_func=lambda x: x)]
+        else:
+            self.items = items or []
+        self.home = home
+
+        self.page_size = self.config['computed']['page_size']
+        self.paginated = self.generate_pages()
+        self.page_val = 0
+
         self.page = self.paginated.next()
 
-    def render(self, offset):
+    def render(self):
         logger.debug('Rendering menu')
+        offset = self.config['font']['title_size']
         for item in self.items:
             item.render(offset)
+            offset += self.config['font']['size']
 
     def __repr__(self):
         return 'MENU'
@@ -57,15 +67,8 @@ class Menu(ViewItem):
     #         print(self.paginated[self.page_val][val])
     #
     def generate_pages(self):
-        if not self.home:
-            for i in range(0, len(self.items), self.page_size):
-                yield self.items[i:i + self.page_size]
-
-        else:
-            from mpi3.view.menu_items import MenuButton
-            yield [MenuButton(render_helper=self.render_helper
-                              , button_type='MENU'
-                              , text='Music')]
+        for i in range(0, len(self.items), self.page_size):
+            yield self.items[i:i + self.page_size]
 
 
 #
@@ -89,7 +92,11 @@ class MenuStack(Stack):
 
         self.home_screen = Menu(render_helper=render_helper, home=True)
         self.add(self.home_screen)
+
         self._is_home = True
+
+    def __repr__(self):
+        return 'MENU STACK: {} items'.format(len(self.stack))
 
     def pop(self):
         if self._is_home:
@@ -99,5 +106,5 @@ class MenuStack(Stack):
             self._is_home = self.peek() is self.home_screen
             return p
 
-    def render(self, offset):
-        self.peek().render(offset)
+    def render(self):
+        self.peek().render()

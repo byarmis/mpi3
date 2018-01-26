@@ -47,7 +47,7 @@ class Button(ViewItem):
 
 class SongButton(Button):
     def __init__(self, render_helper, song_id, play_song, transfer_func):
-        super(SongButton, self).__init__(render_helper)
+        super(SongButton, self).__init__(render_helper, str(song_id))
         self.button_type = 'SONG'
         self.play_song = play_song
         self.song_id = song_id
@@ -66,7 +66,11 @@ class MenuButton(Button):
         super(MenuButton, self).__init__(render_helper, text)
         self.button_type = button_type
         self.text = text
-        self.render_helper = render_helper
+        self._render_helper = render_helper
+        self.BLACK = render_helper.get_black()
+
+    def __str__(self):
+        return self.text
 
     def on_click(self):
         if self.button_type == 'ALBUM':
@@ -82,6 +86,12 @@ class MenuButton(Button):
             # Selected menu is now current menu
             # Rerender
             pass
+
+    def render(self, offset):
+        self._render_helper.draw.text((0, offset)
+                                      , str(self)
+                                      , font=self._render_helper.font
+                                      , fill=self.BLACK)
 
 
 class Cursor(ViewItem):
@@ -99,7 +109,7 @@ class Cursor(ViewItem):
     def y(self):
         return self.tfont_size + (self.font_size * self.value)
 
-    def render(self, _):
+    def render(self):
         self._render_helper.draw.text((0, self.y)
                                       , str(self)
                                       , font=self._render_helper.font
@@ -139,7 +149,7 @@ class Title(ViewItem):
                                                 time=self.time,
                                                 vol=self.vol)
 
-    def render(self, _):
+    def render(self):
         logger.debug('Rendering title')
         self.draw.text((0, 0), str(self), font=self.font, fill=self.BLACK)
 

@@ -37,11 +37,9 @@ class Renderer(object):
     def render(self, partial=None):
         self.blank()
         logger.debug('Rendering')
-        offset = self._render_helper.config['font']['title_size']
         for t in self.targets:
             logger.debug('\t{}'.format(repr(t)))
-            t.render(offset)
-            offset += self._render_helper.config['font']['size']
+            t.render()
 
         self.papirus.display(self.image)
 
