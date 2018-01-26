@@ -17,17 +17,18 @@ class ViewItem(object):
         pass
 
     @abstractmethod
-    def render(self, *args):
+    def __repr__(self):
+        pass
+
+    @abstractmethod
+    def __str__(self):
         pass
 
 
 class Button(ViewItem):
     # A line item on the screen that can optionally be clicked
-    def __init__(self, render_helper, text, on_click=None):
+    def __init__(self, text, on_click=None):
         super(Button, self).__init__()
-        self.draw = render_helper.draw
-        self.font = render_helper.font
-        self.BLACK = render_helper.get_black()
         self.text = text
         self._on_click = on_click
 
@@ -37,21 +38,22 @@ class Button(ViewItem):
     def __str__(self):
         return self.text
 
-    def render(self, offset):
-        self.draw.text((0, offset), ' ' + str(self), font=self.font, fill=self.BLACK)
-
     def on_click(self):
         if self._on_click is not None:
             self._on_click()
 
 
 class SongButton(Button):
-    def __init__(self, render_helper, song_id, play_song, transfer_func):
-        super(SongButton, self).__init__(render_helper, str(song_id))
+    def __init__(self, song_id, song_title, play_song, transfer_func):
+        super(SongButton, self).__init__()
         self.button_type = 'SONG'
         self.play_song = play_song
         self.song_id = song_id
+        self.song_title = song_title
         self.transfer_lists = transfer_func
+
+    def __repr__(self):
+        return 'SONG BUTTON: {}'.format(self.song_title)
 
     def on_click(self):
         # Play by song ID
@@ -62,12 +64,10 @@ class SongButton(Button):
 
 
 class MenuButton(Button):
-    def __init__(self, render_helper, button_type, text):
-        super(MenuButton, self).__init__(render_helper, text)
+    def __init__(self, button_type, text):
+        super(MenuButton, self).__init__()
         self.button_type = button_type
         self.text = text
-        self._render_helper = render_helper
-        self.BLACK = render_helper.get_black()
 
     def __str__(self):
         return self.text
@@ -87,33 +87,12 @@ class MenuButton(Button):
             # Rerender
             pass
 
-    def render(self, offset):
-        self._render_helper.draw.text((0, offset)
-                                      , str(self)
-                                      , font=self._render_helper.font
-                                      , fill=self.BLACK)
-
 
 class Cursor(ViewItem):
-    def __init__(self, render_helper):
+    def __init__(self):
         super(Cursor, self).__init__()
-        self._render_helper = render_helper
-
-        self.tfont_size = render_helper.config['font']['title_size']
-        self.font_size = render_helper.config['font']['size']
-        self.BLACK = get_color(render_helper.config, black=True)
 
         self.value = 1
-
-    @property
-    def y(self):
-        return self.tfont_size + (self.font_size * self.value)
-
-    def render(self):
-        self._render_helper.draw.text((0, self.y)
-                                      , str(self)
-                                      , font=self._render_helper.font
-                                      , fill=self.BLACK)
 
     def __repr__(self):
         return 'CURSOR'
@@ -131,27 +110,19 @@ class Cursor(ViewItem):
 
 
 class Title(ViewItem):
-    def __init__(self, render_helper, state, vol):
+    def __init__(self, state, vol):
         super(Title, self).__init__()
         self.state = state
         self.vol = vol
-
-        self.draw = render_helper.draw
-        self.font = render_helper.tfont
-        self.BLACK = render_helper.get_black()
-
-    @property
-    def time(self):
-        return dt.now().strftime('%I:%M')
 
     def __str__(self):
         return '{state}   {time}  {vol}'.format(state=self.state,
                                                 time=self.time,
                                                 vol=self.vol)
 
-    def render(self):
-        logger.debug('Rendering title')
-        self.draw.text((0, 0), str(self), font=self.font, fill=self.BLACK)
-
     def __repr__(self):
         return 'TITLE'
+
+    @property
+    def time(self):
+        return dt.now().strftime('%I:%M')

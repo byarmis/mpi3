@@ -28,20 +28,14 @@ class Stack(object):
 
 
 class Menu(ViewItem):
-    def __init__(self, render_helper, items=None, home=False):
+    def __init__(self, config, items=None, home=False):
         super(Menu, self).__init__()
 
-        self.config = render_helper.config
-        self.render_helper = render_helper
-        self.draw = self.render_helper.draw
-        self.font = self.render_helper.font
+        self.config = config
 
         if home:
-            self.items = [MenuButton(render_helper=self.render_helper
-                                     , button_type='MENU'
-                                     , text=' Music'),
-                          SongButton(song_id=1, render_helper=render_helper,
-                                     play_song=lambda x: x, transfer_func=lambda x: x)]
+            self.items = [MenuButton(button_type='MENU' , text=' Music'),
+                          SongButton(song_id=1, play_song=lambda x: x, transfer_func=lambda x: x)]
         else:
             self.items = items or []
         self.home = home
@@ -51,13 +45,6 @@ class Menu(ViewItem):
         self.page_val = 0
 
         self.page = self.paginated.next()
-
-    def render(self):
-        logger.debug('Rendering menu')
-        offset = self.config['font']['title_size']
-        for item in self.items:
-            item.render(offset)
-            offset += self.config['font']['size']
 
     def __repr__(self):
         return 'MENU'
@@ -78,8 +65,6 @@ class Menu(ViewItem):
 #
 #     def get_coordinates(self, x):
 #         # Title plus back button
-#         font_size = self.player.config['font']['size']
-#         offset = self.player.config['font']['title_size'] + font_size
 #         return 0, (font_size * x) + offset
 #
 #     def draw_page(self):
@@ -87,10 +72,10 @@ class Menu(ViewItem):
 #             self.player.draw.text(self.get_coordinates(loc), L, font=self.player.font, fill=self.player.BLACK)
 
 class MenuStack(Stack):
-    def __init__(self, render_helper):
+    def __init__(self, config):
         super(MenuStack, self).__init__()
 
-        self.home_screen = Menu(render_helper=render_helper, home=True)
+        self.home_screen = Menu(config=config, home=True)
         self.add(self.home_screen)
 
         self._is_home = True
@@ -105,6 +90,3 @@ class MenuStack(Stack):
             p = self.stack.pop()
             self._is_home = self.peek() is self.home_screen
             return p
-
-    def render(self):
-        self.peek().render()
