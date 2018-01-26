@@ -4,8 +4,9 @@ import logging
 
 from papirus import Papirus
 from mpi3.model.constants import CURSOR_DIR
-from utils import get_screen_size, get_color, get_font
-from menu_items import Title, Cursor, Menu
+from utils import get_screen_size, get_color, get_font, RenderHelper
+from menu_items import Title, Cursor
+from mpi3.model.navigation import MenuStack
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -22,22 +23,25 @@ logger.setLevel(logging.DEBUG)
 
 
 class Renderer(object):
-    def __init__(self, draw, image, config, targets, papirus):
-        self.draw = draw
+    def __init__(self, render_helper, image, targets, papirus):
         self.image = image
-        self.size = get_screen_size(config)
-        self.WHITE = get_color(config=config, white=True)
+        self.size = get_screen_size(render_helper.config)
+        self.draw = render_helper.draw
+        self.WHITE = get_color(config=render_helper.config, white=True)
         self.targets = targets
         self.papirus = papirus
 
         self.partial_update = False
+        self._render_helper = render_helper
 
     def render(self, partial=None):
         self.blank()
         logger.debug('Rendering')
+        offset = self._render_helper.config['font']['title_size']
         for t in self.targets:
             logger.debug('\t{}'.format(repr(t)))
-            t.render()
+            t.render(offset)
+            offset += self._render_helper.config['font']['size']
 
         self.papirus.display(self.image)
 
@@ -45,7 +49,7 @@ class Renderer(object):
 
     def blank(self):
         logger.debug('Blanking')
-        self.draw.rectangle((0, 0) + self.size, fill=self.WHITE, outline=self.WHITE)
+        self._render_helper.draw.rectangle((0, 0) + self.size, fill=self.WHITE, outline=self.WHITE)
 
     def update(self, partial):
         logger.debug('Updating ({})'.format('partially' if self.partial_update else 'completely'))
@@ -58,12 +62,7 @@ class Renderer(object):
 
 class View(object):
     def __init__(self, playback_state, volume, config, play_song, transfer_func):
-        self.config = config
-
         self.screen_size = get_screen_size(config)
-
-        self.title_font = get_font(config, 'title_size')
-        self.font = get_font(config, 'size')
 
         self.WHITE = get_color(config, white=True)
         self.BLACK = get_color(config, black=True)
@@ -72,20 +71,23 @@ class View(object):
         self.papirus.clear()
 
         self.image = Image.new('1', self.screen_size, self.WHITE)
-        self.draw = ImageDraw.Draw(self.image)
         self._play_song = play_song
         self._transfer_func = transfer_func
 
-        self._title = Title(config=config, state=playback_state, vol=volume, draw=self.draw, font=self.title_font)
-        self._cursor = Cursor(config=config, draw=self.draw, font=self.font)
-        # self._menu = Menu(config=config, draw=self.draw, font=self.font, items=)
+        font = get_font(config, 'size')
+        title_font = get_font(config, 'title_size')
+        draw = ImageDraw.Draw(self.image)
+        self._render_helper = RenderHelper(config=config, draw=draw, font=font, tfont=title_font)
 
-        self.renderer = Renderer(image=self.image, draw=self.draw,
-                                 config=config, papirus=self.papirus,
-                                 targets=(
-                                     self._cursor,
-                                     self._title
-                                 ))
+        self._title = Title(render_helper=self._render_helper, state=playback_state, vol=volume)
+        self._cursor = Cursor(self._render_helper)
+        self._menu = MenuStack(self._render_helper)
+
+        self.renderer = Renderer(render_helper=self._render_helper
+                                 , image=self.image
+                                 , papirus=self.papirus
+                                 , targets=(self._cursor, self._title, self._menu)
+                                 )
 
     def move_cursor(self, direction=None, reset=False):
         # TODO: Flesh out with menu/screen changing (w/ cursor resetting) and all that fun stuff
@@ -103,7 +105,6 @@ class View(object):
         # If the menu didn't (small number of items), partial update
         self._cursor.move(direction=direction, reset=reset)
         self.renderer.render()
-
 
 # class Screen:
 #     def __init__(self, player):

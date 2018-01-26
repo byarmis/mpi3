@@ -132,6 +132,15 @@ class Database(object):
         self.scan_libraries()
         self.get_count()
 
+    @staticmethod
+    def _get_filters(filters):
+        if filters:
+            filter_list = ['{} = {}'.format(k, v) for k, v in filters.iteritems()]
+            filter_statement = 'WHERE {}'.format('AND '.join(filter_list))
+        else:
+            filter_statement = ''
+        return filter_statement
+
     def create_db(self):
         if os.path.isfile(self.db_file):
             logger.debug('Library file ({}) exists and will be removed'.format(self.db_file))
@@ -158,18 +167,14 @@ class Database(object):
 
                         self.adder.add(os.path.join(dirpath, f))
 
-    def get_count(self):
+    def get_count(self, filters=None):
         with OpenConnection(self.db_file) as db:
-            c = db.execute(GET_COUNT).fetchall()[0][0]
+            filter_statement = self._get_filters(filters)
+            c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
         self.count = int(c)
+        return self.count
 
     def get_list(self, filters=None):
-        if filters:
-            filter_list = ['{} = {}'.format(k, v) for k, v in filters.iteritems()]
-            filter_statement = 'WHERE {}'.format('AND '.join(filter_list))
-        else:
-            filter_statement = ''
-
         if filters and 'album' in filters:
             logger.debug('Songs should be sorted by track number')
 
@@ -178,6 +183,8 @@ class Database(object):
         else:
             logger.debug('Songs should be sorted alphabetically')
             order_by = 'sortable_title ASC'
+
+        filter_statement = self._get_filters(filters)
 
         with OpenConnection(self.db_file) as db:
             p = db.execute(GET_PLAYLIST.format(filter_statement=filter_statement,

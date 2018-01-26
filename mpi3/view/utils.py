@@ -21,3 +21,14 @@ def get_font(config, size_str):
     font_size = config['font'][size_str]
 
     return ImageFont.truetype(os.path.expanduser(font_dir), font_size)
+
+
+class RenderHelper(object):
+    def __init__(self, config, draw, font, tfont):
+        self.draw = draw
+        self.font = font
+        self.config = config
+        self.tfont = tfont
+
+    def get_black(self):
+        return get_color(self.config, black=True)

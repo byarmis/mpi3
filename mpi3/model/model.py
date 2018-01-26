@@ -94,12 +94,13 @@ class SongList(object):
         self.db = db
         self.filters = filters or dict()
         self.list = self.db.get_list(self.filters)
+        self._cnt = self.db.get_count()
         self.page_size = page_size
         self.song_counter = 0
         self.page = 0  # Only incremented or set when you get a page of that number
 
     def __len__(self):
-        return len(self.list)
+        return self._cnt
 
     def get_first_id(self):
         return self.list[self.song_counter]
@@ -161,6 +162,7 @@ class SongList(object):
         logger.debug('Added filter, regenerating list')
         self.list = self.db.get_list(self.filters)
 
+        logger.debug('List regenerated, resetting song_counter')
         self.song_counter = 0
 
     def remove_filter(self, key):
@@ -169,6 +171,8 @@ class SongList(object):
             logger.debug('Popped the following filter: {}'.format(v))
             logger.debug('Removed filter, regenerating playlist')
             self.list = self.db.get_list(self.filters)
+
+            logger.debug('List regenerated, resetting song_counter')
             self.song_counter = 0
 
         except KeyError as e:
@@ -202,7 +206,7 @@ class Model(object):
         # is selected-- the filters just need to be
         # transferred over and the position saved (so if you start a playlist halfway through,
         # it'll be fine)
-        self.playlist.filters = list(self.viewlist.filters)
+        self.playlist.filters = {k: v for k, v in self.viewlist.filters.items()}
         self.playlist.song_counter = self.viewlist.song_counter
 
     @property

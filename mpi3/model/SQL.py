@@ -35,7 +35,7 @@ WHERE id IN (?)
 
 GET_COUNT = '''
 SELECT COUNT(*)
-FROM library
+FROM library {filter_statement}
 ;'''
 
 
