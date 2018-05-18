@@ -14,13 +14,14 @@ from mpi3.model.constants import (DIRECTION as DIR,
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# What happens when we reach the end of a song and it just stops?
+
 
 class Player(object):
     def __init__(self):
         logger.debug('Initializing player')
         self.config = initialize.get_config()
         self.model = Model(self.config)
-        self.volume = self.model.volume
         self.view = View(config=self.config,
                          playback_state=self.model.playback_state,
                          volume=self.model.volume,
@@ -45,9 +46,11 @@ class Player(object):
         logger.debug('Player initialization complete')
 
     def initialize_mpg123(self):
+        logger.debug('Initializing mpg123 process...')
         self.process = subprocess.Popen(['mpg123', '--remote'],
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE)
+        logger.debug('\t...complete')
 
     def change_song(self, direction):
         if self.process.poll():
@@ -59,6 +62,7 @@ class Player(object):
 
         if next_song:
             logger.debug("Next song's id is: {}".format(next_song))
+
             logger.debug('Playing next song')
             self.play_song(next_song)
             logger.debug('Playing next song started')
@@ -91,7 +95,7 @@ class Player(object):
             self.view.move_cursor(direction=CDIR.UP)
 
         elif self.button_mode == MODE.VOLUME:
-            vol = self.volume.increase
+            vol = self.model.volume.increase
             logger.debug('Volume increased to {}'.format(vol))
 
         elif self.button_mode == MODE.PLAYBACK:
@@ -107,7 +111,7 @@ class Player(object):
 
         elif self.button_mode == MODE.VOLUME:
             logger.debug('Decreasing volume')
-            vol = self.volume.decrease
+            vol = self.model.volume.decrease
             logger.debug('Volume decreased to {}'.format(vol))
 
         elif self.button_mode == MODE.PLAYBACK:

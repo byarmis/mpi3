@@ -66,12 +66,6 @@ class Menu(object):
         return p
 
 
-#
-#     @property
-#     def page(self):
-#         return self.paginated[self.page_val]
-
-
 class MenuStack(Stack):
     def __init__(self, config):
         super(MenuStack, self).__init__()

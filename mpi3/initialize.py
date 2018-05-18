@@ -16,14 +16,14 @@ def get_config():
 
     c['computed'] = {}
     c['computed']['page_size'] = (c['screen_size']['height'] - c['font']['title_size']) // c['font']['size']
-    logger.debug('Parsed the following config file:\n{}'.format(c))
+
     return c
 
 
 def setup_buttons(config, **kwargs):
     GPIO.setmode(GPIO.BCM)
 
-    for name, val in config['buttons'].iteritems():
+    for name, val in config['buttons'].items():
         logger.debug('Setting pin {} to be {}'.format(val, name))
         GPIO.setup(val, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 

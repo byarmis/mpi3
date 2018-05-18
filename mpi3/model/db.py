@@ -9,6 +9,7 @@ import re
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
+from mpi3 import xor
 from mpi3.model.SQL import (
     CREATE_LIBRARY,
     INSERT_SONGS,
@@ -82,6 +83,9 @@ class BatchAdder(object):
         if title:
             title = title[0].strip()
             sortable_title = title.lower().translate(self.stop_chars)
+            if not sortable_title:
+                # We removed too much!  Put it back?
+                sortable_title = title
         else:
             title = None
             sortable_title = None
@@ -111,11 +115,12 @@ class BatchAdder(object):
         return t
 
     def _add_buffer(self):
-        logger.info('Adding batch of songs ({})'.format(len(self._buffer)))
+        logger.debug('Adding batch of songs ({})'.format(len(self._buffer)))
         with OpenConnection(self.db_file) as db:
             db.executemany(INSERT_SONGS, self._buffer)
 
         self._buffer = []
+        logger.debug('\t... complete')
 
 
 class Database(object):
@@ -124,9 +129,7 @@ class Database(object):
         self.dirs = config['directory']
         self.db_file = config['library']
         self.adder = BatchAdder(config)
-        self.count = 0
-
-        self._library_size = None
+        self.count = None
 
         self.create_db()
         self.scan_libraries()
@@ -135,24 +138,24 @@ class Database(object):
     @staticmethod
     def _get_filters(filters):
         if filters:
-            filter_list = ['{} = {}'.format(k, v) for k, v in filters.iteritems()]
-            filter_statement = 'WHERE {}'.format('AND '.join(filter_list))
+            filter_list = ['{} = {}'.format(k, v) for k, v in filters.items()]
+            filter_statement = 'WHERE {}'.format('\nAND '.join(filter_list))
         else:
             filter_statement = ''
         return filter_statement
 
     def create_db(self):
         if os.path.isfile(self.db_file):
-            logger.debug('Library file ({}) exists and will be removed'.format(self.db_file))
+            logger.info('Library file ({}) exists and will be removed'.format(self.db_file))
             os.remove(self.db_file)
         else:
-            logger.debug('Library file ({}) does not exist and will be created'.format(self.db_file))
+            logger.info('Library file ({}) does not exist and will be created'.format(self.db_file))
 
         with OpenConnection(self.db_file) as db:
             db.execute(CREATE_LIBRARY)
 
     def scan_libraries(self):
-        logger.debug('Scanning following directory(s):{}'.format('\n\t'.join(self.dirs)))
+        logger.info('Scanning following directory(s):{}'.format('\n\t'.join(self.dirs)))
 
         for loc_raw in self.dirs:
             loc = os.path.expanduser(loc_raw)
@@ -162,16 +165,19 @@ class Database(object):
                 if filename:
                     for f in filename:
                         if os.path.splitext(f)[1].lower() != '.mp3':
-                            logger.info('Found non-mp3 file: {}'.format(f))
+                            logger.debug('Found non-mp3 file: {}'.format(f))
                             continue
 
                         self.adder.add(os.path.join(dirpath, f))
 
     def get_count(self, filters=None):
-        with OpenConnection(self.db_file) as db:
-            filter_statement = self._get_filters(filters)
-            c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
-        self.count = int(c)
+        # If we haven't already gotten the count, get it
+        # Otherwise, we can just return what we already have
+        if self.count is None:
+            with OpenConnection(self.db_file) as db:
+                filter_statement = self._get_filters(filters)
+                c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
+            self.count = int(c)
         return self.count
 
     def get_list(self, filters=None):
@@ -194,15 +200,16 @@ class Database(object):
         logger.debug('Retrieved following playlist: {}'.format(p))
         return p
 
-    def get_by_id(self, ids, limit_clause='', paths=False, titles=False):
-        if paths:
+    def get_by_id(self, ids, limit_clause='', paths=None, titles=None):
+        assert paths is not None | xor | titles is not None, 'Paths xor titles have to be passed'
+        get_type = None
+
+        if paths is not None:
             logger.debug('Getting paths by ID')
             get_type = 'filepath'
-        elif titles:
+        elif titles is not None:
             logger.debug('Getting titles by ID')
             get_type = 'title'
-        else:
-            raise ValueError('Paths or titles have to be passed')
 
         res = None
         with OpenConnection(self.db_file) as db:

@@ -81,7 +81,9 @@ class Volume(object):
             self.set_volume()
 
         except IndexError:
+            # Can't set it.  Undo what we did
             self._ptr -= amt
+
         return self.val
 
     @property
@@ -215,7 +217,7 @@ class Model(object):
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist
-        # is selected-- the filters just need to be
+        # is selected-- the filters need to be
         # transferred over and the position saved (so if you start a playlist halfway through,
         # it'll be fine)
         self.playlist.filters = {k: v for k, v in self.viewlist.filters.items()}
