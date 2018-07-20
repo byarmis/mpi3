@@ -1,12 +1,10 @@
-#!/bin/python
+#!/usr/bin/env python
+
 import os
 import logging
 from PIL import Image, ImageDraw, ImageFont
 
 from papirus import Papirus
-from mpi3.model.constants import CURSOR_DIR
-from menu_items import Title, Cursor
-from mpi3.model.navigation import MenuStack
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -39,7 +37,6 @@ class Renderer(object):
 
         self.title = title
         self.cursor = cursor
-        self.menu = menu
 
         self.partial_update = False
 
@@ -53,7 +50,7 @@ class Renderer(object):
         self._draw.text((0, (self.cursor.value * self.font.size) + self.tfont.size), self.cursor,
                         font=self.font, fill=self.BLACK)
 
-    def render(self, partial=None):
+    def render(self, items, partial=None):
         self.blank()
         logger.debug('Rendering')
         self.render_title()
@@ -61,7 +58,7 @@ class Renderer(object):
 
         offset = self.tfont.size
 
-        for item in self.menu:
+        for item in items:
             logger.debug('\t{}'.format(repr(item)))
             self._draw.text((0, offset), ' ' + item,
                             font=self.font, fill=self.BLACK)
@@ -121,19 +118,6 @@ class View(object):
                                  )
 
     def move_cursor(self, direction=None, reset=False):
-        # TODO: Flesh out with menu/screen changing (w/ cursor resetting) and all that fun stuff
-
-        # Move the cursor in the direction
-
-        # Did it go outside bounds?
-
-        # If it did, reset it
-
-        # Go to the next menu page (+/- 1)
-
-        # If the menu went to the next page, rerender fully
-
-        # If the menu didn't (small number of items), partial update
         self._cursor.move(direction=direction, reset=reset)
         self.renderer.render()
 

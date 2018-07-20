@@ -1,7 +1,9 @@
 #!/bin/python
 from abc import ABCMeta, abstractmethod
 import logging
-from datetime import datetime as dt
+# from datetime import datetime as dt
+
+from mpi3.model.navigation import Menu
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -12,15 +14,19 @@ class ViewItem(object):
 
     @abstractmethod
     def __init__(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def __repr__(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def __str__(self):
-        pass
+        raise NotImplementedError
+
+    @abstractmethod
+    def button_type(self):
+        return 'VIEW ITEM'
 
 
 class Button(ViewItem):
@@ -36,22 +42,28 @@ class Button(ViewItem):
     def __str__(self):
         return self.text
 
+    def button_type(self):
+        return 'BUTTON'
+
     def on_click(self):
         if self._on_click is not None:
             self._on_click()
 
 
 class SongButton(Button):
+    # A button that's a song
     def __init__(self, song_id, song_title, play_song, transfer_func):
-        super(SongButton, self).__init__()
+        super(SongButton, self).__init__(text=song_title)
         self.button_type = 'SONG'
         self.play_song = play_song
         self.song_id = song_id
-        self.song_title = song_title
         self.transfer_lists = transfer_func
 
     def __repr__(self):
-        return 'SONG BUTTON: {}'.format(self.song_title)
+        return 'SONG BUTTON: {}'.format(self.text)
+
+    def button_type(self):
+        return 'SONG'
 
     def on_click(self):
         # Play by song ID
@@ -62,23 +74,26 @@ class SongButton(Button):
 
 
 class MenuButton(Button):
-    def __init__(self, button_type, text):
-        super(MenuButton, self).__init__()
-        self.button_type = button_type
-        self.text = text
+    def __init__(self, menu_type, text):
+        super(MenuButton, self).__init__(text=text)
+        self.menu_type = menu_type
 
     def __str__(self):
         return self.text
 
+    def button_type(self):
+        return 'MENU'
+
     def on_click(self):
-        if self.button_type == 'ALBUM':
+        if self.menu_type == 'ALBUM':
             # Show the album
             # Generate the sub menu?
+            return Menu()
             pass
-        elif self.button_type == 'ARTIST':
+        elif self.menu_type == 'ARTIST':
             # Show the artist
             pass
-        elif self.button_type == 'MENU':
+        elif self.menu_type == 'MENU':
             # Go into the menu
             # Add current menu to menu stack
             # Selected menu is now current menu
@@ -114,13 +129,12 @@ class Title(ViewItem):
         self.vol = vol
 
     def __str__(self):
-        return '{state}   {time}  {vol}'.format(state=self.state,
-                                                time=self.time,
-                                                vol=self.vol)
+        return '{state}  {vol}'.format(state=self.state,
+                                       vol=self.vol)
 
     def __repr__(self):
         return 'TITLE'
 
-    @property
-    def time(self):
-        return dt.now().strftime('%I:%M')
+    # @property
+    # def time(self):
+    #     return dt.now().strftime('%I:%M')

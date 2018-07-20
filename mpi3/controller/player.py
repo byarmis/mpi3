@@ -28,7 +28,7 @@ class Player(object):
                          play_song=self.play_song,
                          transfer_func=self.model.transfer_viewlist_to_playlist)
 
-        self.view.renderer.render()
+        self.view.renderer.render(self.model.menu)
 
         self.button_mode = MODE.NORMAL
 
@@ -92,7 +92,9 @@ class Player(object):
 
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
-            self.view.move_cursor(direction=CDIR.UP)
+            redraw = self.model.menu.cursor_up
+            self.view.renderer.render(self.model.menu,
+                                      partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
             vol = self.model.volume.increase
@@ -107,7 +109,9 @@ class Player(object):
 
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
-            self.view.move_cursor(direction=CDIR.DOWN)
+            redraw = self.model.menu.cursor_down
+            self.view.renderer.render(self.model.menu,
+                                      partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
             logger.debug('Decreasing volume')

@@ -180,7 +180,7 @@ class Database(object):
             self.count = int(c)
         return self.count
 
-    def get_list(self, filters=None):
+    def get_list(self, filters=None, limit=None, offset=None):
         if filters and 'album' in filters:
             logger.debug('Songs should be sorted by track number')
 
@@ -192,16 +192,24 @@ class Database(object):
 
         filter_statement = self._get_filters(filters)
 
+        limit_clause = '' if limit is None else 'LIMIT %s' % limit
+        offset_clause = '' if offset is None else 'OFFSET %s' % offset
+
         with OpenConnection(self.db_file) as db:
-            p = db.execute(GET_PLAYLIST.format(filter_statement=filter_statement,
-                                               order_by=order_by)).fetchall()
+            q = GET_PLAYLIST.format(filter_statement=filter_statement,
+                                    order_by=order_by,
+                                    limit_clause=limit_clause,
+                                    offset_clause=offset_clause)
+            logger.info('Querying the DB with the following query:')
+            logger.info(q)
+            p = db.execute(q).fetchall()
             p = [i[0] for i in p]
 
         logger.debug('Retrieved following playlist: {}'.format(p))
         return p
 
-    def get_by_id(self, ids, limit_clause='', paths=None, titles=None):
-        assert paths is not None | xor | titles is not None, 'Paths xor titles have to be passed'
+    def get_by_id(self, ids, limit_clause='', paths=False, titles=False):
+        assert paths | xor | titles, 'Paths xor titles have to be passed'
         get_type = None
 
         if paths is not None:

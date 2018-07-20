@@ -22,3 +22,8 @@ buttons:
   select: 20
   play: 16
   volume: 21
+volume:
+  default: 10
+  stepsize_low: 2
+  stepsize_high: 10
+  low_max: 10

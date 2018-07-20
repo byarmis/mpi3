@@ -24,6 +24,8 @@ GET_PLAYLIST = '''
 SELECT id 
 FROM library {filter_statement} 
 ORDER BY {order_by}
+{limit_clause}
+{offset_clause}
 ;'''
 
 GET_BY_ID = '''
