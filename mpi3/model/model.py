@@ -250,7 +250,7 @@ class Model(object):
 
         self.playlist = None
         self.viewlist = None
-        self.menu = Menu(config=config)
+        self.menu = Menu(config=config, db=DATABASE)
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist
@@ -272,11 +272,11 @@ class Model(object):
     def get_path(self, song_ids):
         # Gets the path or paths for one or more songs
         if song_ids is not None:
-            return self.db.get_by_id(song_ids, paths=True)
+            return DATABASE.get_by_id(song_ids, paths=True)
 
     def get_names(self, song_ids):
         if song_ids is not None:
-            return self.db.get_by_id(song_ids, titles=True)
+            return DATABASE.get_by_id(song_ids, titles=True)
 
     def get_next_song(self, direction):
         next_id = None
@@ -286,3 +286,8 @@ class Model(object):
             next_id = self.playlist.get_prev_id(state=self.playback_state)
 
         return next_id
+
+    @property
+    def cursor_val(self):
+        return self.menu._menu_stack.peek().cursor.value
+

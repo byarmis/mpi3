@@ -26,9 +26,10 @@ class Player(object):
                          playback_state=self.model.playback_state,
                          volume=self.model.volume,
                          play_song=self.play_song,
-                         transfer_func=self.model.transfer_viewlist_to_playlist)
+                         transfer_func=self.model.transfer_viewlist_to_playlist,
+                         menu=self.model.menu)
 
-        self.view.renderer.render(self.model.menu)
+        self.view.renderer.render(self.model.menu, self.model.cursor_val)
 
         self.button_mode = MODE.NORMAL
 
@@ -93,7 +94,7 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up
-            self.view.renderer.render(self.model.menu,
+            self.view.renderer.render(self.model.menu, self.model.cursor_val,
                                       partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
@@ -110,7 +111,7 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
             redraw = self.model.menu.cursor_down
-            self.view.renderer.render(self.model.menu,
+            self.view.renderer.render(self.model.menu, self.model.cursor_val,
                                       partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:

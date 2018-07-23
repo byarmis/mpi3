@@ -1,9 +1,6 @@
 #!/bin/python
 from abc import ABCMeta, abstractmethod
 import logging
-# from datetime import datetime as dt
-
-from mpi3.model.navigation import Menu
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -11,10 +8,6 @@ logger.setLevel(logging.DEBUG)
 
 class ViewItem(object):
     __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def __init__(self):
-        raise NotImplementedError
 
     @abstractmethod
     def __repr__(self):
@@ -32,7 +25,6 @@ class ViewItem(object):
 class Button(ViewItem):
     # A line item on the screen that can optionally be clicked
     def __init__(self, text, on_click=None):
-        super(Button, self).__init__()
         self.text = text
         self._on_click = on_click
 
@@ -88,7 +80,7 @@ class MenuButton(Button):
         if self.menu_type == 'ALBUM':
             # Show the album
             # Generate the sub menu?
-            return Menu()
+            # return Menu()
             pass
         elif self.menu_type == 'ARTIST':
             # Show the artist
@@ -101,30 +93,28 @@ class MenuButton(Button):
             pass
 
 
-class Cursor(ViewItem):
-    def __init__(self):
-        super(Cursor, self).__init__()
-
-        self.value = 1
-
-    def __repr__(self):
-        return 'CURSOR'
-
-    def __str__(self):
-        return '>'
-
-    def move(self, direction=None, reset=False):
-        if reset:
-            self.value = 1
-        elif direction:
-            self.value += direction
-        else:
-            raise ValueError('Must pass either reset (T/F) or direction')
+# class Cursor(ViewItem):
+#     def __init__(self):
+#         self.value = 1
+#         logger.info('cursor inited')
+#
+#     def __repr__(self):
+#         return 'CURSOR'
+#
+#     def __str__(self):
+#         return '>'
+#
+#     def move(self, direction=None, reset=False):
+#         if reset:
+#             self.value = 1
+#         elif direction:
+#             self.value += direction
+#         else:
+#             raise ValueError('Must pass either reset (T/F) or direction')
 
 
 class Title(ViewItem):
     def __init__(self, state, vol):
-        super(Title, self).__init__()
         self.state = state
         self.vol = vol
 
@@ -134,6 +124,9 @@ class Title(ViewItem):
 
     def __repr__(self):
         return 'TITLE'
+
+    def button_type(self):
+        pass
 
     # @property
     # def time(self):

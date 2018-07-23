@@ -6,6 +6,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 from papirus import Papirus
 
+from mpi3.model.menu_items import Title
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -21,12 +23,11 @@ logger.setLevel(logging.DEBUG)
 
 
 class Renderer(object):
-    def __init__(self, screen_size, image, draw, font, tfont, papirus, title, cursor, menu, white, black):
+    def __init__(self, screen_size, image, font, tfont, papirus, title, white, black):
         self._image = image
         self._draw = ImageDraw.Draw(self._image)
 
         self.size = screen_size
-        self.draw = draw
         self.papirus = papirus
 
         self.WHITE = white
@@ -36,25 +37,24 @@ class Renderer(object):
         self.tfont = tfont
 
         self.title = title
-        self.cursor = cursor
 
         self.partial_update = False
 
     def render_title(self):
         logger.debug('Rendering title')
-        self._draw.text((0, 0), self.title,
+        self._draw.text((0, 0), str(self.title),
                         font=self.tfont, fill=self.BLACK)
 
-    def render_cursor(self):
+    def render_cursor(self, i):
         logger.debug('Rendering cursor')
-        self._draw.text((0, (self.cursor.value * self.font.size) + self.tfont.size), self.cursor,
+        self._draw.text((0, (i * self.font.size) + self.tfont.size), '>',
                         font=self.font, fill=self.BLACK)
 
-    def render(self, items, partial=None):
+    def render(self, items, cursor_val, partial=None):
         self.blank()
         logger.debug('Rendering')
         self.render_title()
-        self.render_cursor()
+        self.render_cursor(cursor_val)
 
         offset = self.tfont.size
 
@@ -82,7 +82,7 @@ class Renderer(object):
 
 
 class View(object):
-    def __init__(self, playback_state, volume, config, play_song, transfer_func):
+    def __init__(self, playback_state, volume, config, play_song, transfer_func, menu):
         self.config = config
         self._play_song = play_song
         self._transfer_func = transfer_func
@@ -93,9 +93,10 @@ class View(object):
         self.screen_size = (config['screen_size']['width']
                             , config['screen_size']['height'])
 
-        font_dir = self.config['font']
+        font_dir = self.config['font']['dir']
 
-        def get_font(s): return ImageFont.truetype(os.path.expanduser(font_dir), s)
+        def get_font(s):
+            return ImageFont.truetype(os.path.expanduser(font_dir), s)
 
         render_options = {
             'font': get_font(self.config['font']['size']),
@@ -108,18 +109,11 @@ class View(object):
         }
 
         self._title = Title(state=playback_state, vol=volume)
-        self._cursor = Cursor()
-        self._menu = MenuStack(config)
+        self._menu = menu
 
         self.renderer = Renderer(title=self._title
-                                 , cursor=self._cursor
-                                 , menu=self._menu
                                  , **render_options
                                  )
-
-    def move_cursor(self, direction=None, reset=False):
-        self._cursor.move(direction=direction, reset=reset)
-        self.renderer.render()
 
 # class Screen:
 #     def __init__(self, player):

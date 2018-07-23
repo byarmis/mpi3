@@ -34,8 +34,10 @@ class Stack(object):
 class Cursor(ViewItem):
     def __init__(self):
         super(Cursor, self).__init__()
-
         self.value = 1
+
+    def button_type(self):
+        pass
 
     def __repr__(self):
         return 'CURSOR'
@@ -50,7 +52,7 @@ class Cursor(ViewItem):
 
     def __sub__(self, other):
         if not isinstance(other, int):
-            raise ValueError, 'Can only subtract integers to cursor'
+            raise ValueError, 'Can only subtract integers from cursor'
         self.value -= other
 
     def reset(self):
@@ -58,14 +60,13 @@ class Cursor(ViewItem):
 
 
 class IndividualMenu(object):
-    def __init__(self, items=None, filters=None):
-        global DATABASE
-
-        self._db = DATABASE
+    def __init__(self, page_size, items=None, filters=None):
+        # TODO: Add ability to have items of multiple types, not just a big song list
         self.page = 0
         self.filters = filters or dict()
         self.buttons = items or []
         self.cursor = Cursor()
+        self.page_size = page_size
 
         if filters:
             if 'artist' in filters and 'album' not in filters:
@@ -98,27 +99,27 @@ class IndividualMenu(object):
         return self._cursor_move(CURSOR_DIR.UP)
 
     def __iter__(self):
-        return self._db.get_list(
+        return iter(DATABASE.get_list(
             filters=self.filters,
-
-
-        )
+            limit=self.page_size,
+            offset=self.page_size * self.page
+        ))
 
 
 class Menu(object):
     # All menus
-    def __init__(self, config, database):
+    def __init__(self, config, db):
+        global DATABASE
+        DATABASE = db
+
         self.config = config
         self.is_home = True
         self.page_size = self.config['computed']['page_size']
-        self.db = database
-
-        self._menu_stack = Stack(self.generate_home())
+        self._menu_stack = Stack([self.generate_home()])
         # TODO: Change for multiple menus
-        # self.items = [IndividualMenu(items=(
-        #     (MenuButton(menu_type='MENU', text='Music'),
-        #      SongButton(song_id=1, play_song=lambda x: x, transfer_func=lambda x: x))
-        # ))]
+
+    def __iter__(self):
+        return iter(self._menu_stack.peek())
 
     @property
     def cursor_down(self):
@@ -131,22 +132,16 @@ class Menu(object):
     def back(self):
         self._menu_stack.pop()
 
-    @staticmethod
-    def generate_home():
-        return [
-            MenuButton(menu_type='MENU', text='Music')
-            , MenuButton(menu_type='MENU', text='Settings')
-            , MenuButton(menu_type='MENU', text='About')
-        ]
+    def generate_home(self):
+        return IndividualMenu(page_size=self.config['computed']['page_size'],
+                              items=[MenuButton(menu_type='MENU', text='Music')
+                                  , MenuButton(menu_type='MENU', text='Settings')
+                                  , MenuButton(menu_type='MENU', text='About')
+                                     ])
 
     def page(self):
         p = [Button(text='  <', on_click=self.back)]
         p.extend([Button(text=i.title, on_click=i.on_click) for i in self._menu_stack.peek()])
-
-        # p.append(new button for each item returned by filter)
-        # If the filter's an album, set that type
-        # If the filter's an artist, set that type
-        # If the filter's songs, those type
 
         return p
 
@@ -160,23 +155,3 @@ class Menu(object):
 
             # Always re-render
             return True
-
-# class MenuStack(Stack):
-#     def __init__(self, config):
-#         super(MenuStack, self).__init__()
-#
-#         self.home_screen = Menu(config=config, home=True)
-#         self.add(self.home_screen)
-#
-#         self._is_home = True
-#
-#     def __repr__(self):
-#         return 'MENU STACK: {} items'.format(len(self.stack))
-#
-#     def pop(self):
-#         if self._is_home:
-#             return
-#         else:
-#             p = self.stack.pop()
-#             self._is_home = self.peek() is self.home_screen
-#             return p
