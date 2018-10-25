@@ -155,3 +155,23 @@ class Menu(object):
 
             # Always re-render
             return True
+
+
+class Title(ViewItem):
+    def __init__(self, state, vol):
+        self.state = state
+        self.vol = vol
+
+    def __str__(self):
+        return '{state}  {vol}'.format(state=self.state,
+                                       vol=self.vol)
+
+    def __repr__(self):
+        return 'TITLE'
+
+    def button_type(self):
+        pass
+
+    # @property
+    # def time(self):
+    #     return dt.now().strftime('%I:%M')

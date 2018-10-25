@@ -7,9 +7,9 @@ import RPi.GPIO as GPIO
 logger = logging.getLogger(__name__)
 
 
-def get_config():
-    logger.debug('Getting config')
-    with open('./config.yaml') as f:
+def get_config(config):
+    logger.debug('Getting config {}'.format(config))
+    with open(config) as f:
         logger.debug('Loading yaml file')
         c = yaml.load(f)
         logger.debug('yaml file loaded')

@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 
 import logging
 import subprocess
@@ -7,29 +7,31 @@ from threading import Event
 from mpi3 import initialize
 from mpi3.model.model import Model
 from mpi3.view.view import View
-from mpi3.model.constants import (DIRECTION as DIR,
-                                  BUTTON_MODE as MODE,
-                                  CURSOR_DIR as CDIR)
+from mpi3.model.constants import (
+    DIRECTION as DIR,
+    BUTTON_MODE as MODE,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# What happens when we reach the end of a song and it just stops?
 
+# FIXME: What happens when we reach the end of a song and it just stops?
 
 class Player(object):
-    def __init__(self):
-        logger.debug('Initializing player')
-        self.config = initialize.get_config()
+    def __init__(self, args):
+        self.configure_logging(args)
+        self.args = args
+        self.config = initialize.get_config(args.config_file)
         self.model = Model(self.config)
-        self.view = View(config=self.config,
-                         playback_state=self.model.playback_state,
-                         volume=self.model.volume,
-                         play_song=self.play_song,
-                         transfer_func=self.model.transfer_viewlist_to_playlist,
-                         menu=self.model.menu)
+        self.view = View(config=self.config)
 
-        self.view.renderer.render(self.model.menu, self.model.cursor_val)
+        # WATCH OUT-- BIG CHANGE :-/
+        # playback_state=self.model.playback_state,
+        # volume=self.model.volume,
+        # play_song=self.play_song,
+        # transfer_func=self.model.transfer_viewlist_to_playlist,
+        # menu=self.model.menu)
 
         self.button_mode = MODE.NORMAL
 
@@ -46,6 +48,27 @@ class Player(object):
         self.initialize_mpg123()
         logger.debug('Player initialization complete')
 
+        # First render-- complete rerender
+        self.view.renderer.render(partial=False)
+
+    @staticmethod
+    def configure_logging(args):
+        # Configure verbosity
+        #    (-v (INFO) or -vv (DEBUG) are the options for verbose)
+        #    (-q (WARNING) or -qq (CRITICAL, very quiet) are the options for quiet)
+        if args.quiet == 1:
+            logger.setLevel(logging.WARNING)
+        elif args.quiet == 2:
+            logger.setLevel(logging.CRITICAL)
+        if args.verbose is None:
+            logger.setLevel(logging.WARNING)
+        elif args.verbose == 1:
+            logger.setLevel(logging.INFO)
+        elif args.verbose >= 2:
+            logger.setLevel(logging.DEBUG)
+
+
+
     def initialize_mpg123(self):
         logger.debug('Initializing mpg123 process...')
         self.process = subprocess.Popen(['mpg123', '--remote'],
@@ -59,11 +82,12 @@ class Player(object):
             self.initialize_mpg123()
 
         logger.debug('Getting next song')
+
+        # PEP-572 would be helpful here, I think?
         next_song = self.model.get_next_song(direction)
 
         if next_song:
             logger.debug("Next song's id is: {}".format(next_song))
-
             logger.debug('Playing next song')
             self.play_song(next_song)
             logger.debug('Playing next song started')
@@ -94,7 +118,9 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up
-            self.view.renderer.render(self.model.menu, self.model.cursor_val,
+            self.view.renderer.render(page=self.model.page,
+                                      cursor_val=self.model.cursor_val,
+                                      title=self.model.title,
                                       partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
@@ -111,7 +137,9 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
             redraw = self.model.menu.cursor_down
-            self.view.renderer.render(self.model.menu, self.model.cursor_val,
+            self.view.renderer.render(page=self.model.page,
+                                      cursor_val=self.model.cursor_val,
+                                      title=self.model.title,
                                       partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
@@ -127,13 +155,33 @@ class Player(object):
         logger.debug('SELECT')
 
         if self.button_mode == MODE.NORMAL:
-            pass
+            raise NotImplementedError("Clicking on things isn't working yet.  Shut up")
+            self.model.selected.on_click()
+            self.view.renderer.render(page=self.model.page,
+                                      cursor_val=self.model.cursor_val,
+                                      title=self.model.title,
+                                      partial=redraw)
+            return
 
-        elif self.button_mode in (MODE.VOLUME, MODE.PLAYBACK):
+        elif self.button_mode == MODE.VOLUME:
+            # MUTE
+            vol = self.model.volume.mute
+            if vol:
+                logger.debug('Volume changed to {}'.format(vol))
+            else:
+                logger.debug('Volume muted')
+
+        elif self.button_mode == MODE.PLAYBACK:
             # Pause
-            self.is_playing = not self.is_playing
+            self.is_playing = False
             self.process.stdin.write('PAUSE\n')
             logger.debug('Song paused')
+
+        # Have to rerender to update the volume and playback mode info
+        self.view.renderer.render(page=self.model.page,
+                                  cursor_val=self.model.cursor_val,
+                                  title=self.model.title,
+                                  partial=False) # Never do a full redraw when just changing one of those two
 
     def play(self, _):
         logger.debug('PLAY')
@@ -145,11 +193,18 @@ class Player(object):
         elif self.button_mode == MODE.VOLUME:
             logger.debug('Getting next playback mode')
             self.model.next_playback_state()
+            # Setting the button mode back to normal
+            self.button_mode = MODE.NORMAL
 
         elif self.button_mode == MODE.PLAYBACK:
             logger.debug('Exiting PLAYBACK button mode, going back to NORMAL')
             self.button_mode = MODE.NORMAL
 
+        # Have to rerender to update the volume and playback mode info
+        self.view.renderer.render(page=self.model.page,
+                                  cursor_val=self.model.cursor_val,
+                                  title=self.model.title,
+                                  partial=False) # Never do a full redraw when just changing one of those two
     def vol(self, _):
         logger.debug('VOL pressed')
         if self.button_mode == MODE.NORMAL:
@@ -162,23 +217,31 @@ class Player(object):
         elif self.button_mode == MODE.PLAYBACK:
             logger.debug('Getting next playback mode')
             self.model.next_playback_state()
+            # Setting the button mode back to normal
+            self.button_mode = MODE.NORMAL
+
+        # Have to rerender to update the volume and playback mode info
+        self.view.renderer.render(page=self.model.page,
+                                  cursor_val=self.model.cursor_val,
+                                  title=self.model.title,
+                                  partial=False) # Never do a full redraw when just changing one of those two
 
     def run(self):
         logger.debug('Running player')
 
         while True:
             Event().wait(1)
-
-        # START Testing
-        logger.debug('Playing music started')
-
-        first_song = self.model.get_first_song_id()
-        logger.debug('Trying to play: {}'.format(first_song))
-        self.play_song(first_song)
-        while self.model.has_songs_in_playlist:
-            self.process.wait()
-            self.change_song(direction=DIR.FORWARD)
-
-        # END Testing
+        #
+        # # START Testing
+        # logger.debug('Playing music started')
+        #
+        # first_song = self.model.get_first_song_id()
+        # logger.debug('Trying to play: {}'.format(first_song))
+        # self.play_song(first_song)
+        # while self.model.has_songs_in_playlist:
+        #     self.process.wait()
+        #     self.change_song(direction=DIR.FORWARD)
+        #
+        # # END Testing
 
         logger.debug('Running player-- complete')

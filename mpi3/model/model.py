@@ -7,7 +7,7 @@ from itertools import cycle
 from subprocess import call
 
 from mpi3.model.db import Database
-from mpi3.model.navigation import Menu
+from mpi3.model.navigation import Menu, Title
 from constants import (
     DIRECTION as DIR
 )
@@ -93,7 +93,8 @@ class Volume(object):
                             'Setting it to zero')
                 self.current_volume = 0
 
-        self.set_volume()
+        self._set_volume()
+        self._old_volume = None
 
     def __str__(self):
         if self.current_volume == 100:
@@ -114,9 +115,9 @@ class Volume(object):
         else:
             a = self._array
             self.current_volume = a[a.index(v) + amt]
-            self.set_volume()
+            self._set_volume()
 
-    def set_volume(self):
+    def _set_volume(self):
         call(['amixer', 'sset', 'Master', '{}%'.format(self.current_volume)])
 
     @property
@@ -127,6 +128,32 @@ class Volume(object):
     def decrease(self):
         # TODO: Mute vs 0%?  How's the noise?
         return self._change_val(-1)
+
+    @property
+    def mute(self):
+        if self.current_volume > 0:
+            # Mute
+
+            # Save the current volume
+            self._old_volume = self.current_volume
+            # Set the new value
+            self.current_volume = 0
+
+        elif self._old_volume is not None:
+            # Unmute
+            self.current_volume = self._old_volume
+            # Null it out?
+            self._old_volume = None
+
+        else:
+            # lol idk?
+            logger.warn('Not sure to mute or unmute\n\tcurrent volume: {}\n\told volume: {}'.format(
+                self.current_volume,
+                self._old_volume
+            ))
+
+        self._set_volume()
+        return self.current_volume
 
 
 class SongList(object):
@@ -251,6 +278,7 @@ class Model(object):
         self.playlist = None
         self.viewlist = None
         self.menu = Menu(config=config, db=DATABASE)
+        self.title = Title(state=self.playback_state, vol=self.volume.current_volume)
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist
@@ -290,4 +318,3 @@ class Model(object):
     @property
     def cursor_val(self):
         return self.menu._menu_stack.peek().cursor.value
-
