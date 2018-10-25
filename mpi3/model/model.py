@@ -6,9 +6,9 @@ from collections import namedtuple
 from itertools import cycle
 from subprocess import call
 
-from mpi3.model.db import Database
-from mpi3.model.navigation import Menu, Title
-from constants import (
+from model.db import Database
+from model.navigation import Menu, Title
+from model.constants import (
     DIRECTION as DIR
 )
 

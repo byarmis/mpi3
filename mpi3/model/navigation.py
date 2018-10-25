@@ -1,9 +1,9 @@
 #!/bin/python
 
 import logging
-from mpi3.model.menu_items import Button, MenuButton, SongButton, ViewItem
-from mpi3.model.db import Database
-from mpi3.model.constants import CURSOR_DIR
+from model.menu_items import Button, MenuButton, SongButton, ViewItem
+from model.db import Database
+from model.constants import CURSOR_DIR
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,6 +32,10 @@ class Stack(object):
 
 
 class Cursor(ViewItem):
+    '''
+    Range of (-inf, inf)
+    '''
+    # TODO: Should this have a lower limit of 0?
     def __init__(self):
         super(Cursor, self).__init__()
         self.value = 1

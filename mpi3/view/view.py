@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from papirus import Papirus
 
-from mpi3.model.menu_items import Title
+from model.menu_items import Title
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

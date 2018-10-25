@@ -10,7 +10,7 @@ from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
 from mpi3 import xor
-from mpi3.model.SQL import (
+from model.SQL import (
     CREATE_LIBRARY,
     INSERT_SONGS,
     GET_PLAYLIST,

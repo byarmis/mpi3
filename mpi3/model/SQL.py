@@ -39,3 +39,4 @@ GET_COUNT = '''
 SELECT COUNT(*)
 FROM library {filter_statement}
 ;'''
+

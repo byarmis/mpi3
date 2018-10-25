@@ -1,7 +1,5 @@
 #!/bin/python3
-
 from functools import partial
-
 
 # Y'all ready for a weird, hacky workaround?
 # http://tomerfiliba.com/blog/Infix-Operators/
