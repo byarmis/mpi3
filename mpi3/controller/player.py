@@ -4,10 +4,10 @@ import logging
 import subprocess
 from threading import Event
 
-from mpi3 import initialize
-from mpi3.model.model import Model
-from mpi3.view.view import View
-from mpi3.model.constants import (
+import initialize
+from model.model import Model
+from view.view import View
+from model.constants import (
     DIRECTION as DIR,
     BUTTON_MODE as MODE,
 )
