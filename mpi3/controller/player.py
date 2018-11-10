@@ -60,14 +60,13 @@ class Player(object):
             logger.setLevel(logging.WARNING)
         elif args.quiet == 2:
             logger.setLevel(logging.CRITICAL)
+
         if args.verbose is None:
             logger.setLevel(logging.WARNING)
         elif args.verbose == 1:
             logger.setLevel(logging.INFO)
         elif args.verbose >= 2:
             logger.setLevel(logging.DEBUG)
-
-
 
     def initialize_mpg123(self):
         logger.debug('Initializing mpg123 process...')
@@ -113,8 +112,6 @@ class Player(object):
         logger.debug('Song stopped')
 
     def up(self, _):
-        logger.debug('UP')
-
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up
@@ -132,8 +129,6 @@ class Player(object):
             self.change_song(direction=DIR.FORWARD)
 
     def down(self, _):
-        logger.debug('DOWN')
-
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
             redraw = self.model.menu.cursor_down
@@ -181,7 +176,7 @@ class Player(object):
         self.view.renderer.render(page=self.model.page,
                                   cursor_val=self.model.cursor_val,
                                   title=self.model.title,
-                                  partial=False) # Never do a full redraw when just changing one of those two
+                                  partial=False)  # Never do a full redraw when just changing one of those two
 
     def play(self, _):
         logger.debug('PLAY')
@@ -204,7 +199,8 @@ class Player(object):
         self.view.renderer.render(page=self.model.page,
                                   cursor_val=self.model.cursor_val,
                                   title=self.model.title,
-                                  partial=False) # Never do a full redraw when just changing one of those two
+                                  partial=False)  # Never do a full redraw when just changing one of those two
+
     def vol(self, _):
         logger.debug('VOL pressed')
         if self.button_mode == MODE.NORMAL:
@@ -224,7 +220,7 @@ class Player(object):
         self.view.renderer.render(page=self.model.page,
                                   cursor_val=self.model.cursor_val,
                                   title=self.model.title,
-                                  partial=False) # Never do a full redraw when just changing one of those two
+                                  partial=False)  # Never do a full redraw when just changing one of those two
 
     def run(self):
         logger.debug('Running player')
