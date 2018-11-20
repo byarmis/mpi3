@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from collections import namedtuple
 
 _dir_list = ['FORWARD', 'BACKWARD']

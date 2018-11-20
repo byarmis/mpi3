@@ -1,4 +1,5 @@
-#!/bin/python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import logging
 import random
@@ -6,9 +7,9 @@ from collections import namedtuple
 from itertools import cycle
 from subprocess import call
 
-from model.db import Database
-from model.navigation import Menu, Title
-from model.constants import (
+from mpi3.model.db import Database
+from mpi3.model.navigation import Menu, Title
+from mpi3.model.constants import (
     DIRECTION as DIR
 )
 
@@ -45,7 +46,7 @@ class PlaybackStates(object):
         self.state = self.next()
 
     def next(self):
-        self.state = self._iterator.next()
+        self.state = next(self._iterator)
         return self.state
 
     def __str__(self):
@@ -71,8 +72,8 @@ class Volume(object):
         high_vol_stepsize = config['stepsize_high']
         low_vol_max = config['low_max']
 
-        self._array = range(0, low_vol_max, low_vol_stepsize)
-        self._array += range(low_vol_max, 100 + high_vol_stepsize, high_vol_stepsize)
+        self._array = list(range(0, low_vol_max, low_vol_stepsize))
+        self._array += list(range(low_vol_max, 100 + high_vol_stepsize, high_vol_stepsize))
 
         try:
             self.current_volume = desired_default

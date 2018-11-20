@@ -1,1 +1,4 @@
 PyYAML
+RPi.GPIO
+mutagen
+pillow

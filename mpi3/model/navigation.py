@@ -1,9 +1,10 @@
-#!/bin/python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import logging
-from model.menu_items import Button, MenuButton, SongButton, ViewItem
-from model.db import Database
-from model.constants import CURSOR_DIR
+from mpi3.model.menu_items import Button, MenuButton, SongButton, ViewItem
+from mpi3.model.db import Database
+from mpi3.model.constants import CURSOR_DIR
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -35,6 +36,7 @@ class Cursor(ViewItem):
     '''
     Range of (-inf, inf)
     '''
+
     # TODO: Should this have a lower limit of 0?
     def __init__(self):
         super(Cursor, self).__init__()
@@ -51,12 +53,12 @@ class Cursor(ViewItem):
 
     def __add__(self, other):
         if not isinstance(other, int):
-            raise ValueError, 'Can only add integers to cursor'
+            raise ValueError('Can only add integers to cursor')
         self.value += other
 
     def __sub__(self, other):
         if not isinstance(other, int):
-            raise ValueError, 'Can only subtract integers from cursor'
+            raise ValueError('Can only subtract integers from cursor')
         self.value -= other
 
     def reset(self):
@@ -81,8 +83,8 @@ class IndividualMenu(object):
                 # TODO: Add
                 self.buttons += []
             else:
-                raise ValueError, 'Unknown item(s) in filters: {}'.format(
-                    ', '.join(filters.keys()))
+                raise ValueError('Unknown item(s) in filters: {}'.format(
+                    ', '.join(filters.keys())))
 
         self.strings = [str(i) for i in self.buttons]
 

@@ -1,5 +1,5 @@
 font:
-  dir: ~/UbuntuMono-R.ttf
+  file: ~/mpi3/mpi3/static/font/UbuntuMono-R.ttf
   size: 15
   title_size: 13
 screen_size:
@@ -9,7 +9,7 @@ page_size: 13
 music:
   directory:
     - ~/Music/
-  library: library.sqlite
+  library: ~/mpi3/library.sqlite
   buffer_load_size: 10
   bad_tracks:
     - 112

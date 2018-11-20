@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import io
 import os
@@ -20,6 +20,8 @@ REQUIRED = [
     'PyYAML'
     , 'papirus'
     , 'RPi.GPIO'
+    , 'PIL'
+    , 'mutagen'
 ]
 
 # What packages are optional?

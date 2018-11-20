@@ -1,4 +1,5 @@
 #!/bin/python
+#!/usr/bin/env python3
 from abc import ABCMeta, abstractmethod
 import logging
 

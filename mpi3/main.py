@@ -1,8 +1,9 @@
-#!/bin/python3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import argparse
 import logging
 from datetime import datetime
-from controller.player import Player
+from mpi3.controller.player import Player
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -12,7 +13,8 @@ if __name__ == '__main__':
                                      epilog='For bugs, questions, and discussion, see https://gitlab.com/byarmis/mpi3',
                                      prog='mpi3')
 
-    parser.add_argument('--config-file', '-c', type=str, default='./config.yaml',
+    # TODO: Might need to change                                     \/
+    parser.add_argument('--config-file', '-c', type=str, default='./mpi3/config.yaml',
                         help='file path for the config file to use')
 
     parser.add_argument('--verbose', '-v', action='count', default=None,

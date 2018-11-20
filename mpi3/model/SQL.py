@@ -1,4 +1,5 @@
-#!/bin/python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 CREATE_LIBRARY = '''
 CREATE TABLE library (
@@ -39,4 +40,3 @@ GET_COUNT = '''
 SELECT COUNT(*)
 FROM library {filter_statement}
 ;'''
-

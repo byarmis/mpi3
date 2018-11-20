@@ -1,5 +1,7 @@
-#!/bin/python3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from functools import partial
+
 
 # Y'all ready for a weird, hacky workaround?
 # http://tomerfiliba.com/blog/Infix-Operators/
@@ -16,6 +18,7 @@ class Infix(object):
 
     def __call__(self, v1, v2):
         return self.func(v1, v2)
+
 
 @Infix
 def xor(x, y):

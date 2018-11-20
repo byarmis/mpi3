@@ -1,12 +1,15 @@
 # Introduction
 
-This is part-guide, part-build log, part-notepad.  Not everything here will remain here as this project progresses, but it'll probably remain somewhere.  I might make a buildlog.md file or something like that and move everything over there.
+This is part-guide, part-build log, part-notepad.
+Not everything here will remain here as this project progresses, but it'll probably remain somewhere.
+I might make a buildlog.md file or something like that and move everything over there.
 
 # Hardware
 ## Electronics
 
 * Raspberry Pi Zero or Zero W
-* Micro SD Card.  You will probably want a larger one than you'd normally put in a Raspberry Pi Zero
+* Micro SD Card.
+You will probably want a larger one than you'd normally put in a Raspberry Pi Zero
 * Pin headers
 * [Pi Supply PaPiRus Zero ePper pHAT v1.2](https://www.adafruit.com/product/3335)
 * [PowerBoost 1000 Charger](https://www.adafruit.com/product/2465)
@@ -16,7 +19,7 @@ This is part-guide, part-build log, part-notepad.  Not everything here will rema
   * You can use a different one, but the 3D-printed case will require modifications
 * [Sliding switch](https://www.adafruit.com/product/805)
 * Female USB A Connector
-  * One should with the PowerBoost
+  * One should come with the PowerBoost
 * Various electronic hardware including wires, solder, soldering iron, wire strippers, micro USB power supply
 
 ## Nuts and bolts
@@ -31,9 +34,13 @@ This is part-guide, part-build log, part-notepad.  Not everything here will rema
 
 ## Software
 
-It is suggested that you use a computer to SSH into the Raspberry Pi Zero in order to set up and configure.  I used my desktop Linux computer but a Mac laptop will be able to SSH in with minimal issues also.  A Windows computer will also be able to SSH in, but will require additional software (PuTTY, I think should work).  The Raspberry Pi documentation [here](https://www.raspberrypi.org/documentation/remote-access/ssh/) is pretty good.
+It is suggested that you use a computer to SSH into the Raspberry Pi Zero in order to set up and configure.
+I used my desktop Linux computer but a Mac laptop will be able to SSH in with minimal issues also.
+A Windows computer will also be able to SSH in, but will require additional software (PuTTY, I think should work).
+The Raspberry Pi documentation [here](https://www.raspberrypi.org/documentation/remote-access/ssh/) is pretty good.
 
-1. Flash SD card with [Raspbian Lite](https://www.raspberrypi.org/downloads/raspbian/) or another distro of your choice.  Since this will be headless, you probably don't need a windows manager so the leaner the better.
+1. Flash SD card with [Raspbian Lite](https://www.raspberrypi.org/downloads/raspbian/) or another distro of your choice.
+Since this will be headless, you probably don't need a windows manager so the leaner the better.
 2. Set up wifi, if applicable
     
     In `/etc/wpa_supplicant/wpa_supplicant.conf`, add network SSID(s) and password(s):
@@ -46,20 +53,28 @@ It is suggested that you use a computer to SSH into the Raspberry Pi Zero in ord
     ```
     
 3. Add a file to the `/boot/` folder called `ssh` to allow SSH by default.
-4. Now would be a good time to move the music over to the `/home/pi/Music/` folder, creating it if it does not currently exist since transferring a couple of gigabytes would definitely be faster over a USB card reader compared to the Pi's built-in WiFi.  If you want to add music later, you could also use `sftp` to wirelessly upload it.  I originally wanted to use Dropbox to asynchronously synchronize music folders, but Dropbox doesn't have an ARM version (yet?).
+4. Now would be a good time to move the music over to the `/home/pi/Music/` folder, creating it if it does not currently exist since transferring a couple of gigabytes would definitely be faster over a USB card reader compared to the Pi's built-in WiFi.
+If you want to add music later, you could also use `sftp` to wirelessly upload it.
+I originally wanted to use Dropbox to synchronize music folders, but Dropbox doesn't have an ARM version (yet?).
 5. Note that the above three steps can be done by plugging the micro SD card into another computer and navigating the file system (Windows can only see the `/boot/` folder and not any others).
 6. Boot up, SSH in, and update
-  * `sudo apt-get update`
-  * `sudo apt-get upgrade`
-  * `sudo apt-get dist-upgrade`
-  * `sudo apt-get autoremove`
-  * `sudo apt-get install rpi-update git mpg123 sqlite3`
-  * `sudo rpi-update`
-7. Run `sudo raspi-config` and change to auto-login to terminal on boot-up.  Also, update your timezone and WiFi settings since we're here
+    ```bash
+      $ sudo apt update; sudo apt upgrade;
+      $ sudo apt install rpi-update git mpg123 sqlite3 python3-dev
+      $ sudo apt autoremove
+      $ sudo rpi-update
+    ```
+7. Run `sudo raspi-config` and change to auto-login to terminal on boot-up.
+Also, update your timezone and WiFi settings since we're here
 8. Install the [PaPiRus python package](https://github.com/PiSupply/PaPiRus) by running `curl -sSL https://pisupp.ly/papiruscode | sudo bash`
 9. Shutdown (`sudo poweroff`) and plug in the DAC using the OTG adapter
-10. Boot up and configure your default sound output to be the USB DAC.  I suggest [this](https://raspberrypi.stackexchange.com/a/44825) answer on the Raspberry Pi Stack Exchange.  Test to make sure that everything works by running `speaker-test -c 2` which will play pink noise over the left, followed by the right, channels.
+10. Boot up and configure your default sound output to be the USB DAC.
+I suggest [this](https://raspberrypi.stackexchange.com/a/44825) answer on the Raspberry Pi Stack Exchange.
+Test to make sure that everything works by running `speaker-test -c 2` which will play pink noise over the left, followed by the right, channels.
 11. Disable the HDMI output per [this](https://www.jeffgeerling.com/blogs/jeff-geerling/raspberry-pi-zero-conserve-energy) page to save a couple milliamps.
+12. Clone this repo by running `git clone https://gitlab.com/byarmis/mpi3`
+13. Make this start on boot up by editing the root crontab by running `sudo crontab -e -u root` and appending the line `TBD`
+14. Reboot (`sudo reboot`) and you should be good to go!
 
 ## Hardware
 

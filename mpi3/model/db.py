@@ -1,4 +1,5 @@
-#!/bin/python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import sqlite3
 import logging
@@ -10,7 +11,7 @@ from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
 from mpi3 import xor
-from model.SQL import (
+from mpi3.model.SQL import (
     CREATE_LIBRARY,
     INSERT_SONGS,
     GET_PLAYLIST,
@@ -127,7 +128,7 @@ class Database(object):
     def __init__(self, config):
         logger.info('Initializing Database')
         self.dirs = config['directory']
-        self.db_file = config['library']
+        self.db_file = os.path.expanduser(config['library'])
         self.adder = BatchAdder(config)
         self.count = None
 
