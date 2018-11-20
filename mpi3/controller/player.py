@@ -26,13 +26,6 @@ class Player(object):
         self.model = Model(self.config)
         self.view = View(config=self.config)
 
-        # WATCH OUT-- BIG CHANGE :-/
-        # playback_state=self.model.playback_state,
-        # volume=self.model.volume,
-        # play_song=self.play_song,
-        # transfer_func=self.model.transfer_viewlist_to_playlist,
-        # menu=self.model.menu)
-
         self.button_mode = MODE.NORMAL
 
         self.is_playing = False
@@ -49,7 +42,8 @@ class Player(object):
         logger.debug('Player initialization complete')
 
         # First render-- complete rerender
-        self.view.render(partial=False)
+        self.view.render(title='TITLE', items=['first', 'second', 'third'], cursor_val=self.model.cursor_val,
+                         partial=False)
 
     @staticmethod
     def configure_logging(args):

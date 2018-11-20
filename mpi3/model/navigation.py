@@ -9,8 +9,6 @@ from mpi3.model.constants import CURSOR_DIR
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-DATABASE = None
-
 
 class Stack(object):
     def __init__(self, items=None):
@@ -30,6 +28,9 @@ class Stack(object):
 
     def __len__(self):
         return len(self.stack)
+
+    def __eq__(self, other):
+        return self.stack == other.stack
 
 
 class Cursor(ViewItem):
@@ -77,7 +78,6 @@ class IndividualMenu(object):
         if filters:
             if 'artist' in filters and 'album' not in filters:
                 # TODO: Add
-                # .extend
                 self.buttons += []
             elif 'album' in filters:
                 # TODO: Add
@@ -104,28 +104,22 @@ class IndividualMenu(object):
     def cursor_up(self):
         return self._cursor_move(CURSOR_DIR.UP)
 
-    def __iter__(self):
-        return iter(DATABASE.get_list(
-            filters=self.filters,
-            limit=self.page_size,
-            offset=self.page_size * self.page
-        ))
-
 
 class Menu(object):
     # All menus
     def __init__(self, config, db):
-        global DATABASE
-        DATABASE = db
-
         self.config = config
         self.is_home = True
         self.page_size = self.config['computed']['page_size']
         self._menu_stack = Stack([self.generate_home()])
-        # TODO: Change for multiple menus
+        self.db = db
 
     def __iter__(self):
-        return iter(self._menu_stack.peek())
+        return iter(self.db.get_list(
+            filters=self._menu_stack.peek().filters,
+            limit=self.page_size,
+            offset=self.page_size * self.page
+        ))
 
     @property
     def cursor_down(self):

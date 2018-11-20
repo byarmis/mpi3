@@ -20,11 +20,10 @@ DATABASE = None
 
 
 class Song(object):
-    def __init__(self, song_id):
-        global DATABASE
+    def __init__(self, song_id, title, path):
         self.id = song_id
-        self.title = DATABASE.get_by_id(song_id, titles=True)
-        self.path = DATABASE.get_by_id(song_id, paths=True)
+        self.title = title
+        self.path = path
 
     def __str__(self):
         return self.title
@@ -221,7 +220,7 @@ class SongList(object):
                 self.song_counter %= len(self.list)
 
         elif state == 'REPEAT':
-            pass
+            return self.song_counter
 
         elif state == 'SHUFFLE':
             # Random is random :)
@@ -270,15 +269,14 @@ class SongList(object):
 
 class Model(object):
     def __init__(self, config):
-        global DATABASE
-        DATABASE = Database(config['music'])
+        self.database = Database(config['music'])
         self.volume = Volume(config['volume'])
 
         self.playback_state = PlaybackStates()
 
         self.playlist = None
         self.viewlist = None
-        self.menu = Menu(config=config, db=DATABASE)
+        self.menu = Menu(config=config, db=self.database)
         self.title = Title(state=self.playback_state, vol=self.volume.current_volume)
 
     def transfer_viewlist_to_playlist(self):

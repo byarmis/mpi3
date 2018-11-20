@@ -79,6 +79,10 @@ class View(object):
 
         font_file = self.config['font']['file']
 
+        logger.debug('Font file: {}, expanded to {}'.format(
+            font_file, os.path.expanduser(font_file)
+        ))
+
         def get_font(s):
             return ImageFont.truetype(os.path.expanduser(font_file), s)
 

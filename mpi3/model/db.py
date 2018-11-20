@@ -33,7 +33,7 @@ class NoSong(Exception):
 
 class OpenConnection(object):
     def __init__(self, db_file):
-        self.db_file = db_file
+        self.db_file = os.path.expanduser(db_file)
         self.conn = None
         self.cursor = None
 
@@ -136,15 +136,6 @@ class Database(object):
         self.scan_libraries()
         self.get_count()
 
-    @staticmethod
-    def _get_filters(filters):
-        if filters:
-            filter_list = ['{} = {}'.format(k, v) for k, v in filters.items()]
-            filter_statement = 'WHERE {}'.format('\nAND '.join(filter_list))
-        else:
-            filter_statement = ''
-        return filter_statement
-
     def create_db(self):
         if os.path.isfile(self.db_file):
             logger.info('Library file ({}) exists and will be removed'.format(self.db_file))
@@ -240,3 +231,12 @@ class Database(object):
             return [id_to_str[i] for i in ids]
         except TypeError:
             return [id_to_str[ids]]
+
+    @staticmethod
+    def _get_filters(filters):
+        if filters:
+            filter_list = ['{} = {}'.format(k, v) for k, v in filters.items()]
+            filter_statement = 'WHERE {}'.format('\nAND '.join(filter_list))
+        else:
+            filter_statement = ''
+        return filter_statement

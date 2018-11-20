@@ -20,7 +20,7 @@ REQUIRED = [
     'PyYAML'
     , 'papirus'
     , 'RPi.GPIO'
-    , 'PIL'
+    , 'pillow'
     , 'mutagen'
 ]
 
