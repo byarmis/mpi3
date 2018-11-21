@@ -9,6 +9,7 @@ from mpi3.model.constants import CURSOR_DIR
 
 logger = logging.getLogger(__name__)
 
+
 class Stack(object):
     def __init__(self, items=None):
         self.stack = items or []
@@ -78,8 +79,8 @@ class Menu(object):
         self.config = config
         self.is_home = True
         self.page_size = self.config['computed']['page_size']
-        self._menu_stack = Stack([self.generate_home()])
         self.db = db
+        self._menu_stack = Stack([self.generate_home()])
 
     def cursor_down(self):
         return self._menu_stack.peek().cursor_down()
@@ -93,8 +94,12 @@ class Menu(object):
 
     def generate_home(self):
         from mpi3.model.model import SongList
+        f = lambda x: None
+
         return SongMenu(page_size=self.page_size,
-                        song_list=SongList(db=self.db, page_size=self.page_size))
+                        song_list=SongList(db=self.db,
+                                           page_size=self.page_size,
+                                           play_song=f))
         # return IndividualMenu(page_size=self.config['computed']['page_size'],
         #                       items=[MenuButton(menu_type='MENU', text='Music'),
         #                              MenuButton(menu_type='MENU', text='Settings'),

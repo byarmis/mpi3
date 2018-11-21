@@ -19,8 +19,8 @@ from mpi3.model.SQL import (
     GET_COUNT,
 )
 
-
 logger = logging.getLogger(__name__)
+
 
 class NoSong(Exception):
     def __init__(self, value):
@@ -207,11 +207,13 @@ class Database(object):
             logger.debug('Getting titles by ID')
             get_type = 'title'
 
-        res = None
+        q = GET_BY_ID.format(get_type=get_type,
+                             limit_clause=limit_clause,
+                             param_count=','.join('?' for _ in ids))
+        logger.debug('Running the following query: {}'.format(q))
         with OpenConnection(self.db_file) as db:
             try:
-                res = db.execute(GET_BY_ID.format(get_type=get_type,
-                                                  limit_clause=limit_clause), (ids,)).fetchall()[0]
+                res = db.execute(q, ids).fetchall()
                 # Should return ((3, 'path'), (4,'path')...)
                 # or ((3, 'name'), (4, 'name')...)
             except IndexError:

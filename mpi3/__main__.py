@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import argparse
 import logging
+import os
 from datetime import datetime
 
 from mpi3.controller.player import Player
@@ -13,14 +15,14 @@ if __name__ == '__main__':
                                      epilog='For bugs, questions, and discussion, see https://gitlab.com/byarmis/mpi3',
                                      prog='mpi3')
 
-    # TODO: Might need to change                                     \/
     parser.add_argument('--config-file', '-c',
                         dest='config_file',
                         type=str,
+                        # TODO: Might need to change below
                         default='./mpi3/config.yaml',
                         help='File path for the config file to use')
 
-    parser.add_argument('--log', '-l',
+    parser.add_argument('--log-level', '-ll',
                         dest='log_level',
                         type=str,
                         default='WARNING',
@@ -32,12 +34,14 @@ if __name__ == '__main__':
                                 \n\tCRITICAL
                                 Default is WARNING''')
 
-    parser.add_argument('--log-file', '-l',
+    parser.add_argument('--log-file', '-lf',
                         dest='log_file',
                         type=str,
-                        default=datetime.now().strftime('%Y%m%d%H%M%s_mpi3.log'),
-                        help='''The file to log to, if any.
-                                If "False" (case-insensitive), will log to stdout instead.''')
+                        default=datetime.now().strftime('~/mpi3/%Y-%m-%d|%H:%M:%S.log'),
+                        help='''The file to log to, if any.  
+                                If "False" (case-insensitive), will log to stdout instead.  
+                                Defaults to ~/mpi3/<current date>_mpi3.log
+                                ''')
 
     args = parser.parse_args()
 
@@ -48,11 +52,15 @@ if __name__ == '__main__':
         import sys
         logging.basicConfig(level=log_level, stream=sys.stdout)
     else:
-        logging.basicConfig(level=log_level, filename=args.log_file)
+        logging.basicConfig(level=log_level, filename=os.path.expanduser(args.log_file))
 
-    logger.info('Initializing player')
-    p = Player(args=args)
-    logger.info('Running player')
-    p.run()
-    logger.critical('Running player-- COMPLETE')
+    try:
+        logger.info('Initializing player')
+        p = Player(args=args)
+        logger.info('Running player')
+        p.run()
+        logger.critical('Running player-- COMPLETE')
+    finally:
+        from papirus import Papirus
+        Papirus().clear()
 

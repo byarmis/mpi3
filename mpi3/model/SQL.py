@@ -33,7 +33,7 @@ ORDER BY {order_by}
 GET_BY_ID = '''
 SELECT id, {get_type}
 FROM library
-WHERE id IN (?)
+WHERE id IN ({param_count})
 {limit_clause}
 ;'''
 

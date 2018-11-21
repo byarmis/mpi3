@@ -15,6 +15,7 @@ from mpi3.model.constants import (
 
 logger = logging.getLogger(__name__)
 
+
 # FIXME: What happens when we reach the end of a song and it just stops?
 
 class Player(object):

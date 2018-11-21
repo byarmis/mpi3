@@ -97,7 +97,7 @@ class Volume(object):
             self._set_volume()
 
     def _set_volume(self):
-        call(['amixer', 'sset', 'Master', '{}%'.format(self.current_volume)])
+        call(['amixer', 'sset', 'PCM', '{}%'.format(self.current_volume)])
 
     @property
     def increase(self):
@@ -151,7 +151,7 @@ class SongList(object):
 
         self.refresh_list()
 
-    def __repr__(self):
+    def __iter__(self):
         for song_id, title, path in zip(self.id_list, self.title_list, self.path_list):
             yield SongButton(song_id=song_id,
                              song_title=title,
@@ -280,7 +280,7 @@ class Model(object):
 
     @property
     def cursor_val(self):
-        return self.menu._menu_stack.peek().cursor.value
+        return self.menu._menu_stack.peek().cursor_val
 
     @property
     def page(self):
