@@ -9,28 +9,12 @@ from subprocess import call
 
 from mpi3.model.db import Database
 from mpi3.model.navigation import Menu, Title
+from mpi3.model.menu_items import SongButton
 from mpi3.model.constants import (
     DIRECTION as DIR
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-DATABASE = None
-
-
-class Song(object):
-    def __init__(self, song_id, title, path):
-        self.id = song_id
-        self.title = title
-        self.path = path
-
-    def __str__(self):
-        return self.title
-
-    def __repr__(self):
-        return self.path
-
 
 class PlaybackStates(object):
     def __init__(self):
@@ -54,9 +38,6 @@ class PlaybackStates(object):
     def __repr__(self):
         return self.state
 
-    # def __eq__(self, other):
-    #     return self.state == other.state
-
 
 class Volume(object):
     #  0   2  4  6  8
@@ -74,10 +55,10 @@ class Volume(object):
         self._array = list(range(0, low_vol_max, low_vol_stepsize))
         self._array += list(range(low_vol_max, 100 + high_vol_stepsize, high_vol_stepsize))
 
-        try:
+        if desired_default in self._array:
             self.current_volume = desired_default
 
-        except IndexError:
+        else:
             # Get the difference between the desired and actual possible
             diff = [desired_default - i for i in self._array]
 
@@ -89,8 +70,8 @@ class Volume(object):
                     break
             else:
                 # Can't find anything close. Set the first non-mute
-                logger.warn('Cannot find any volumes less than the desired default.  ' \
-                            'Setting it to zero')
+                logger.warning('Cannot find any volumes less than the desired default.  '
+                               'Setting it to zero')
                 self.current_volume = 0
 
         self._set_volume()
@@ -105,8 +86,6 @@ class Volume(object):
             return '{:02.0f}'.format(self.current_volume)
 
     def _change_val(self, amt):
-        assert amt == 1 or amt == -1, \
-            'Unknown volume change amount: {}'.format(amt)
         v = self.current_volume
         if amt < 0 and v == 0:
             logger.info('Cannot go lower than 0')
@@ -147,9 +126,9 @@ class Volume(object):
 
         else:
             # lol idk?
-            logger.warn('Not sure to mute or unmute\n\tcurrent volume: {}\n\told volume: {}'.format(
-                self.current_volume,
-                self._old_volume
+            logger.warning('Not sure to mute or unmute\n\tcurrent volume: {}\n\told volume: {}'.format(
+                    self.current_volume,
+                    self._old_volume
             ))
 
         self._set_volume()
@@ -157,25 +136,49 @@ class Volume(object):
 
 
 class SongList(object):
-    def __init__(self, db, filters=None, page_size=1):
+    def __init__(self, db, play_song, page_size, filters=None):
         self.db = db
         self.filters = filters or dict()
-        self.list = self.db.get_list(self.filters)
         self._cnt = self.db.get_count()
         self.page_size = page_size
+        self.play_song = play_song
         self.song_counter = 0
         self.page = 0
+
+        self.id_list = []
+        self.title_list = []
+        self.path_list = []
+
+        self.refresh_list()
+
+    def __repr__(self):
+        for song_id, title, path in zip(self.id_list, self.title_list, self.path_list):
+            yield SongButton(song_id=song_id,
+                             song_title=title,
+                             song_path=path,
+                             play_song=self.play_song)
 
     def __len__(self):
         return self._cnt
 
-    @property
-    def get_id(self):
-        if 0 <= self.song_counter < self._cnt:
-            return self.list[self.song_counter]
+    def refresh_list(self):
+        self.id_list = self.db.get_list(filters=self.filters,
+                                        limit=self.page_size,
+                                        offset=self.page * self.page_size)
+        self.title_list = self.db.get_by_id(ids=self.id_list, titles=True)
+        self.path_list = self.db.get_by_id(ids=self.id_list, paths=True)
 
-        else:
-            return None
+    @property
+    def selected_id(self):
+        start = self.page * self.page_size
+        end = self.page_size + (self.page * self.page_size)
+        if not (start <= self.song_counter <= end):
+            # Go to the next page and get it
+            # Also should work for random song changes that might skip to a random page
+            self.page = self.song_counter // self.page_size
+            self.refresh_list()
+
+        return self.id_list[self.song_counter - start]
 
     def get_next_id(self, state):
         if state in ('NORMAL', 'LOOP'):
@@ -187,7 +190,7 @@ class SongList(object):
 
         if state == 'LOOP':
             # Wrap around
-            self.song_counter %= len(self.list)
+            self.song_counter %= self._cnt
 
         elif state == 'REPEAT':
             # Play the same song over and over
@@ -196,16 +199,18 @@ class SongList(object):
         elif state == 'SHUFFLE':
             # Get a random new song ID that isn't the current one
             old = self.song_counter
-            new = random.randint(0, len(self.list) - 1)
-            while len(self.list) > 1 and old != new:
+
+            # randint is inclusive, we want exclusive
+            new = random.randint(0, self._cnt - 1)
+
+            while len(self.id_list) > 1 and old != new:
                 # Make sure that we're getting a new song
                 # ID if there is a new one to get
                 # Worst case O(inf), expected case O(1)
-                new = random.randint(0, len(self.list) - 1)
+                new = random.randint(0, self._cnt - 1)
             self.song_counter = new
 
-        out_id = self.list[self.song_counter]
-        return out_id
+        return self.selected_id
 
     def get_prev_id(self, state):
         if state == 'NORMAL':
@@ -217,7 +222,7 @@ class SongList(object):
         elif state == 'LOOP':
             self.song_counter -= 1
             if self.song_counter < 0:
-                self.song_counter %= len(self.list)
+                self.song_counter %= self._cnt
 
         elif state == 'REPEAT':
             return self.song_counter
@@ -226,66 +231,25 @@ class SongList(object):
             # Random is random :)
             return self.get_next_id('SHUFFLE')
 
-        out_id = self.list[self.song_counter]
-        return out_id
-
-    # def add_filter(self, artist=None, album=None):
-    #     if not artist and not album:
-    #         logger.warn('Attempted to add an empty filter.  Ignoring')
-    #
-    #     if artist:
-    #         self.filters['artist'] = artist
-    #     if album:
-    #         self.filters['album'] = album
-    #
-    #     logger.debug('Added filter, regenerating list')
-    #     self.list = self.db.get_list(self.filters)
-    #
-    #     logger.debug('List regenerated, resetting song_counter')
-    #     self.song_counter = 0
-    #
-    # def remove_filter(self, key):
-    #     try:
-    #         v = self.filters.pop(key)
-    #         logger.debug('Popped the following filter: {}'.format(v))
-    #         logger.debug('Removed filter, regenerating playlist')
-    #         self.list = self.db.get_list(self.filters)
-    #
-    #         logger.debug('List regenerated, resetting song_counter')
-    #         self.song_counter = 0
-    #
-    #     except KeyError as e:
-    #         logger.error('Tried to remove filter from empty filter list')
-    #         raise e
-    #
-    # def get_paginated_names(self, page):
-    #     self.page = page
-    #     # There are probably off-by-one-errors here
-    #     offset = len(self.list) // (self.page_size * page) if page > 0 else 0
-    #     limit_clause = 'LIMIT {row_count} OFFSET {offset}'.format(row_count=self.page_size,
-    #                                                               offset=offset)
-    #     return self.db.get_by_id(self.list, limit_clause=limit_clause, titles=True)
+        return self.selected_id
 
 
 class Model(object):
-    def __init__(self, config):
+    def __init__(self, config, play_song):
         self.database = Database(config['music'])
         self.volume = Volume(config['volume'])
 
         self.playback_state = PlaybackStates()
 
-        self.playlist = None
-        self.viewlist = None
+        self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
         self.menu = Menu(config=config, db=self.database)
         self.title = Title(state=self.playback_state, vol=self.volume.current_volume)
 
     def transfer_viewlist_to_playlist(self):
-        # This will be called when a song in a playlist
-        # is selected-- the filters need to be
-        # transferred over and the position saved (so if you start a playlist
-        # halfway through, it'll be fine)
-        self.playlist.filters = {k: v for k, v in self.viewlist.filters.items()}
-        self.playlist.song_counter = self.viewlist.song_counter
+        # This will be called when a song in a playlist is selected-- the filters need to be
+        # transferred over and the position saved (so if you start a playlist halfway through, it'll be fine)
+        self.playlist.filters = {k: v for k, v in self.menu.viewlist.filters.items()}
+        self.playlist.song_counter = self.menu.viewlist.song_counter
 
     @property
     def has_songs_in_playlist(self):
@@ -299,11 +263,11 @@ class Model(object):
     def get_path(self, song_ids):
         # Gets the path or paths for one or more songs
         if song_ids is not None:
-            return DATABASE.get_by_id(song_ids, paths=True)
+            return self.database.get_by_id(song_ids, paths=True)
 
     def get_names(self, song_ids):
         if song_ids is not None:
-            return DATABASE.get_by_id(song_ids, titles=True)
+            return self.database.get_by_id(song_ids, titles=True)
 
     def get_next_song(self, direction):
         next_id = None
@@ -317,3 +281,7 @@ class Model(object):
     @property
     def cursor_val(self):
         return self.menu._menu_stack.peek().cursor.value
+
+    @property
+    def page(self):
+        return self.menu._menu_stack.peek()

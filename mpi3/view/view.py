@@ -8,8 +8,6 @@ from PIL import Image, ImageDraw, ImageFont
 from papirus import Papirus
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 class Renderer(object):
     def __init__(self, screen_size, image, font, tfont, papirus, white, black):

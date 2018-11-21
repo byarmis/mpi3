@@ -3,10 +3,10 @@
 import argparse
 import logging
 from datetime import datetime
+
 from mpi3.controller.player import Player
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A Raspberry Pi-based MP3 player',
@@ -14,28 +14,45 @@ if __name__ == '__main__':
                                      prog='mpi3')
 
     # TODO: Might need to change                                     \/
-    parser.add_argument('--config-file', '-c', type=str, default='./mpi3/config.yaml',
-                        help='file path for the config file to use')
+    parser.add_argument('--config-file', '-c',
+                        dest='config_file',
+                        type=str,
+                        default='./mpi3/config.yaml',
+                        help='File path for the config file to use')
 
-    parser.add_argument('--verbose', '-v', action='count', default=None,
-                        help='''
-                        verbosity level for logging.
-                        \n\t-v   for INFO
-                        \n\t-vv  for DEBUG
-                        Default is WARNING''')
+    parser.add_argument('--log', '-l',
+                        dest='log_level',
+                        type=str,
+                        default='WARNING',
+                        help='''Verbosity level for logging.  Options are case-insensitive and:
+                                \n\tDEBUG
+                                \n\tINFO
+                                \n\tWARNING
+                                \n\tERROR
+                                \n\tCRITICAL
+                                Default is WARNING''')
 
-    parser.add_argument('--quiet', '-q', action='count', default=None,
-                        help='''
-                        makes logging quieter than default.
-                        \n\t-q   for ERROR
-                        \n\t-qq  for CRITICAL.  
-                        Default is WARNING''')
+    parser.add_argument('--log-file', '-l',
+                        dest='log_file',
+                        type=str,
+                        default=datetime.now().strftime('%Y%m%d%H%M%s_mpi3.log'),
+                        help='''The file to log to, if any.
+                                If "False" (case-insensitive), will log to stdout instead.''')
 
-    parser.add_argument('--log-file', '-l', type=str, default=datetime.now().strftime('%Y%m%d%H%M%s_mpi3.log'),
-                        help='the file to log to, if any.  If "False" (case-insensitive), will log to stdout instead')
+    args = parser.parse_args()
 
-    logger.debug('Initializing player')
-    p = Player(args=parser.parse_args())
-    logger.debug('Running player')
+    log_level = getattr(logging, args.log_level.upper(), None)
+    assert log_level is not None, 'Invalid log level: {}'.format(log_level)
+
+    if args.log_file.lower().strip() == 'false':
+        import sys
+        logging.basicConfig(level=log_level, stream=sys.stdout)
+    else:
+        logging.basicConfig(level=log_level, filename=args.log_file)
+
+    logger.info('Initializing player')
+    p = Player(args=args)
+    logger.info('Running player')
     p.run()
-    logger.debug('Running player-- COMPLETE')
+    logger.critical('Running player-- COMPLETE')
+

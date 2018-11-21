@@ -16,12 +16,11 @@ from mpi3.model.SQL import (
     INSERT_SONGS,
     GET_PLAYLIST,
     GET_BY_ID,
-    GET_COUNT
+    GET_COUNT,
 )
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
+logger = logging.getLogger(__name__)
 
 class NoSong(Exception):
     def __init__(self, value):
@@ -130,11 +129,9 @@ class Database(object):
         self.dirs = config['directory']
         self.db_file = os.path.expanduser(config['library'])
         self.adder = BatchAdder(config)
-        self.count = None
 
         self.create_db()
         self.scan_libraries()
-        self.get_count()
 
     def create_db(self):
         if os.path.isfile(self.db_file):
@@ -165,12 +162,11 @@ class Database(object):
     def get_count(self, filters=None):
         # If we haven't already gotten the count, get it
         # Otherwise, we can just return what we already have
-        if self.count is None:
-            with OpenConnection(self.db_file) as db:
-                filter_statement = self._get_filters(filters)
-                c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
-            self.count = int(c)
-        return self.count
+        with OpenConnection(self.db_file) as db:
+            filter_statement = self._get_filters(filters)
+            c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
+
+        return c
 
     def get_list(self, filters=None, limit=None, offset=None):
         if filters and 'album' in filters:
@@ -236,7 +232,6 @@ class Database(object):
     def _get_filters(filters):
         if filters:
             filter_list = ['{} = {}'.format(k, v) for k, v in filters.items()]
-            filter_statement = 'WHERE {}'.format('\nAND '.join(filter_list))
+            return 'WHERE {}'.format('\nAND '.join(filter_list))
         else:
-            filter_statement = ''
-        return filter_statement
+            return ''

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import yaml
 import logging
 import os
 
 import RPi.GPIO as GPIO
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 def get_config(config):
     config_path = os.path.expanduser(config)
@@ -32,3 +33,4 @@ def setup_buttons(config, **kwargs):
 
     for k, v in kwargs.items():
         GPIO.add_event_detect(config['buttons'][k], GPIO.FALLING, v)
+

@@ -59,7 +59,7 @@ I originally wanted to use Dropbox to synchronize music folders, but Dropbox doe
 5. Note that the above three steps can be done by plugging the micro SD card into another computer and navigating the file system (Windows can only see the `/boot/` folder and not any others).
 6. Boot up, SSH in, and update
     ```bash
-      $ sudo apt update; sudo apt upgrade;
+      $ sudo apt update; sudo apt upgrade
       $ sudo apt install rpi-update git mpg123 sqlite3 python3-dev
       $ sudo apt autoremove
       $ sudo rpi-update
@@ -72,7 +72,7 @@ Also, update your timezone and WiFi settings since we're here
 I suggest [this](https://raspberrypi.stackexchange.com/a/44825) answer on the Raspberry Pi Stack Exchange.
 Test to make sure that everything works by running `speaker-test -c 2` which will play pink noise over the left, followed by the right, channels.
 11. Disable the HDMI output per [this](https://www.jeffgeerling.com/blogs/jeff-geerling/raspberry-pi-zero-conserve-energy) page to save a couple milliamps.
-12. Clone this repo by running `git clone https://gitlab.com/byarmis/mpi3`
+12. Clone this repo by running `git clone https://gitlab.com/byarmis/mpi3`.  Or actually, `pip install mpi3`?  Maybe?  TBD
 13. Make this start on boot up by editing the root crontab by running `sudo crontab -e -u root` and appending the line `TBD`
 14. Reboot (`sudo reboot`) and you should be good to go!
 
@@ -80,14 +80,18 @@ Test to make sure that everything works by running `speaker-test -c 2` which wil
 
 ### PowerBoost 1000
 
-The PowerBoost comes with resistors that signal over the data lines an iPhone or iPad can draw higher current than normal (500 mA).  These aren't neccessary and I worry about their effects on the data lines that will be connected later.  There's also a really bright LED that indicates that the PowerBoost is on-- this is duplicating the function of the green LED already on the Raspberry Pi and is really bright.
+The PowerBoost comes with resistors that signal over the data lines an iPhone or iPad can draw higher current than normal (500 mA).
+These aren't neccessary and I worry about their effects on the data lines that will be connected later.
+There's also a really bright LED that indicates that the PowerBoost is on-- this is duplicating the function of the green LED already on the Raspberry Pi and is really bright.
 
 The components that can be removed are:
 
 * R9, R10, R11, and R12-- the resistors on the data lines
 * R5 and LED2-- the LED that indicates power
 
-To remove the unneeded components, I just used a soldering iron with a blob of solder on the tip and a pair of tweezers.  I went back after with some desoldering braid to clean up the extra solder.  Be sure to leave the capacitor that's near the inductor.
+To remove the unneeded components, I just used a soldering iron with a blob of solder on the tip and a pair of tweezers.
+I went back after with some desoldering braid to clean up the extra solder.
+Be sure to leave the capacitor that's near the inductor.
 
 ![PowerBoost without components](/imgs/powerboost_no_components.jpg)
 

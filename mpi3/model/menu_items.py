@@ -1,11 +1,9 @@
-#!/bin/python
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 class ViewItem(object):
     __metaclass__ = ABCMeta
@@ -45,25 +43,25 @@ class Button(ViewItem):
 
 class SongButton(Button):
     # A button that's a song
-    def __init__(self, song_id, song_title, play_song, transfer_func):
+    def __init__(self, song_id, song_title, song_path, play_song):
         super(SongButton, self).__init__(text=song_title)
         self.button_type = 'SONG'
         self.play_song = play_song
         self.song_id = song_id
-        self.transfer_lists = transfer_func
+        self.song_path = song_path
+
+    def __str__(self):
+        return self.text
 
     def __repr__(self):
-        return 'SONG BUTTON: {}'.format(self.text)
+        return self.song_path
 
     def button_type(self):
         return 'SONG'
 
     def on_click(self):
         # Play by song ID
-        self.play_song(self.song_id)
-
-        # Set the view list to be the play list
-        self.transfer_lists()
+        self.play_song(self.song_path)
 
 
 class MenuButton(Button):
@@ -92,25 +90,3 @@ class MenuButton(Button):
             # Selected menu is now current menu
             # Rerender
             pass
-
-
-# class Cursor(ViewItem):
-#     def __init__(self):
-#         self.value = 1
-#         logger.info('cursor inited')
-#
-#     def __repr__(self):
-#         return 'CURSOR'
-#
-#     def __str__(self):
-#         return '>'
-#
-#     def move(self, direction=None, reset=False):
-#         if reset:
-#             self.value = 1
-#         elif direction:
-#             self.value += direction
-#         else:
-#             raise ValueError('Must pass either reset (T/F) or direction')
-
-

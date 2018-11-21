@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import logging
 import subprocess
@@ -13,17 +14,13 @@ from mpi3.model.constants import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 # FIXME: What happens when we reach the end of a song and it just stops?
 
 class Player(object):
     def __init__(self, args):
-        self.configure_logging(args)
-        self.args = args
         self.config = initialize.get_config(args.config_file)
-        self.model = Model(self.config)
+        self.model = Model(config=self.config, play_song=self.play_song)
         self.view = View(config=self.config)
 
         self.button_mode = MODE.NORMAL
@@ -44,23 +41,6 @@ class Player(object):
         # First render-- complete rerender
         self.view.render(title='TITLE', items=['first', 'second', 'third'], cursor_val=self.model.cursor_val,
                          partial=False)
-
-    @staticmethod
-    def configure_logging(args):
-        # Configure verbosity
-        #    (-v (INFO) or -vv (DEBUG) are the options for verbose)
-        #    (-q (WARNING) or -qq (CRITICAL, very quiet) are the options for quiet)
-        if args.quiet == 1:
-            logger.setLevel(logging.WARNING)
-        elif args.quiet == 2:
-            logger.setLevel(logging.CRITICAL)
-
-        if args.verbose is None:
-            logger.setLevel(logging.WARNING)
-        elif args.verbose == 1:
-            logger.setLevel(logging.INFO)
-        elif args.verbose >= 2:
-            logger.setLevel(logging.DEBUG)
 
     def initialize_mpg123(self):
         logger.debug('Initializing mpg123 process...')
@@ -108,7 +88,7 @@ class Player(object):
     def up(self, _):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
-            redraw = self.model.menu.cursor_up
+            redraw = self.model.menu.cursor_up()
             self.view.render(page=self.model.page,
                              cursor_val=self.model.cursor_val,
                              title=self.model.title,
@@ -125,7 +105,7 @@ class Player(object):
     def down(self, _):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
-            redraw = self.model.menu.cursor_down
+            redraw = self.model.menu.cursor_down()
             self.view.render(page=self.model.page,
                              cursor_val=self.model.cursor_val,
                              title=self.model.title,

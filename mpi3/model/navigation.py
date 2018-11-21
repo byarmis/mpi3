@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from datetime import datetime as dt
+
 from mpi3.model.menu_items import Button, MenuButton, SongButton, ViewItem
-from mpi3.model.db import Database
 from mpi3.model.constants import CURSOR_DIR
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 class Stack(object):
     def __init__(self, items=None):
@@ -33,69 +32,37 @@ class Stack(object):
         return self.stack == other.stack
 
 
-class Cursor(ViewItem):
-    '''
-    Range of (-inf, inf)
-    '''
+class SongMenu(object):
+    # What's on screen at the moment
 
-    # TODO: Should this have a lower limit of 0?
-    def __init__(self):
-        super(Cursor, self).__init__()
-        self.value = 1
-
-    def button_type(self):
-        pass
-
-    def __repr__(self):
-        return 'CURSOR'
-
-    def __str__(self):
-        return '>'
-
-    def __add__(self, other):
-        if not isinstance(other, int):
-            raise ValueError('Can only add integers to cursor')
-        self.value += other
-
-    def __sub__(self, other):
-        if not isinstance(other, int):
-            raise ValueError('Can only subtract integers from cursor')
-        self.value -= other
-
-    def reset(self):
-        self.value = 1
-
-
-class IndividualMenu(object):
-    def __init__(self, page_size, items=None, filters=None):
+    def __init__(self, page_size, song_list):
         # TODO: Add ability to have items of multiple types, not just a big song list
         self.page = 0
-        self.filters = filters or dict()
-        self.buttons = items or []
-        self.cursor = Cursor()
+        self.song_list = song_list
         self.page_size = page_size
+        self.cursor_val = 1
 
-        if filters:
-            if 'artist' in filters and 'album' not in filters:
-                # TODO: Add
-                self.buttons += []
-            elif 'album' in filters:
-                # TODO: Add
-                self.buttons += []
-            else:
-                raise ValueError('Unknown item(s) in filters: {}'.format(
-                    ', '.join(filters.keys())))
-
-        self.strings = [str(i) for i in self.buttons]
+        self.strings = [str(i) for i in self.song_list]
 
     def _cursor_move(self, direction):
-        v = self.cursor.value
-        if 0 < v < len(self.buttons):
-            self.cursor += direction
-            return False  # Don't full redraw
+        self.song_list.song_counter += direction
+
+        if 0 < self.cursor_val < len(self.song_list):
+            self.cursor_val += direction
+
+            # Don't full redraw
+            return False
         else:
-            self.cursor.reset()
+            # Change pages and reset the cursor location to the first item
+            self.cursor_val = 1
             self.page += direction
+            if self.page < 0:
+                # If we went backwards, go to the previous page
+                self.page = (len(self.song_list) // self.page_size) + 1
+            self.song_list.refresh_list()
+
+            self.strings = [str(i) for i in self.song_list]
+            # Full redraw
             return True
 
     def cursor_down(self):
@@ -114,36 +81,30 @@ class Menu(object):
         self._menu_stack = Stack([self.generate_home()])
         self.db = db
 
-    def __iter__(self):
-        return iter(self.db.get_list(
-            filters=self._menu_stack.peek().filters,
-            limit=self.page_size,
-            offset=self.page_size * self.page
-        ))
-
-    @property
     def cursor_down(self):
-        return self._menu_stack.peek().cursor_down
+        return self._menu_stack.peek().cursor_down()
 
-    @property
     def cursor_up(self):
-        return self._menu_stack.peek().cursor_up
+        return self._menu_stack.peek().cursor_up()
 
     def back(self):
         self._menu_stack.pop()
+        return True
 
     def generate_home(self):
-        return IndividualMenu(page_size=self.config['computed']['page_size'],
-                              items=[MenuButton(menu_type='MENU', text='Music')
-                                  , MenuButton(menu_type='MENU', text='Settings')
-                                  , MenuButton(menu_type='MENU', text='About')
-                                     ])
+        from mpi3.model.model import SongList
+        return SongMenu(page_size=self.page_size,
+                        song_list=SongList(db=self.db, page_size=self.page_size))
+        # return IndividualMenu(page_size=self.config['computed']['page_size'],
+        #                       items=[MenuButton(menu_type='MENU', text='Music'),
+        #                              MenuButton(menu_type='MENU', text='Settings'),
+        #                              MenuButton(menu_type='MENU', text='About')])
 
-    def page(self):
-        p = [Button(text='  <', on_click=self.back)]
-        p.extend([Button(text=i.title, on_click=i.on_click) for i in self._menu_stack.peek()])
-
-        return p
+        # def page(self):
+        #     p = [Button(text='  <', on_click=self.back)]
+        #     p.extend([Button(text=i.title, on_click=i.on_click) for i in self._menu_stack.peek()])
+        #
+        #     return p
 
     def on_click(self):
         if self._menu_stack.peek().cursor.value > 0:
@@ -172,6 +133,8 @@ class Title(ViewItem):
     def button_type(self):
         pass
 
-    # @property
-    # def time(self):
-    #     return dt.now().strftime('%I:%M')
+    @property
+    def time(self):
+        # No idea how reliable this is
+        logger.warning('Getting the time ({})-- is this reliable?'.format(dt.now().strftime('%I:%M')))
+        return dt.now().strftime('%I:%M')
