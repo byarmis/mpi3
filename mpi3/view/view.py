@@ -9,6 +9,7 @@ from papirus import Papirus
 
 logger = logging.getLogger(__name__)
 
+
 class Renderer(object):
     def __init__(self, screen_size, image, font, tfont, papirus, white, black):
         self._image = image
@@ -78,7 +79,7 @@ class View(object):
         font_file = self.config['font']['file']
 
         logger.debug('Font file: {}, expanded to {}'.format(
-            font_file, os.path.expanduser(font_file)
+                font_file, os.path.expanduser(font_file)
         ))
 
         def get_font(s):

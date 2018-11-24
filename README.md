@@ -96,7 +96,7 @@ To remove the unneeded components, I just used a soldering iron with a blob of s
 I went back after with some desoldering braid to clean up the extra solder.
 Be sure to leave the capacitor that's near the inductor.
 
-![PowerBoost 1000 without components](/imgs/powerboost1k_no_components.jpg)
+![PowerBoost 1000 without components](mpi3/static/imgs/powerboost1k_no_components.jpg)
 
 #### PowerBoost 500
 Similarly, the components that can be removed are:

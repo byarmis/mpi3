@@ -16,7 +16,7 @@ There are already many options out there to choose from, as we can see below, an
 ## Power Consumption
 
 The testing setup, pictured below, for measuring the power consumption is pretty standard:
-![Testing Setup](/imgs/current_testing.jpg)
+![Testing Setup](mpi3/static/imgs/current_testing.jpg)
 
 There is a 5v USB power supply being fed through the multimeter and into the Raspberry Pi.
 

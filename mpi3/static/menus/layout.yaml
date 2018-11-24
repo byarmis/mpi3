@@ -27,7 +27,7 @@ home:
             - about:
                 name: About
                 type: shell
-                command: version.sh
+                command: versions.py
 
             - update:
                 name: Update
