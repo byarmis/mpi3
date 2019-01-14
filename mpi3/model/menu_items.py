@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ViewItem(object):
     __metaclass__ = ABCMeta
 

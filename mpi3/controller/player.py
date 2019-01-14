@@ -137,7 +137,7 @@ class Player(object):
             # MUTE
             vol = self.model.volume.mute
             if vol:
-                logger.debug('Volume changed to {}'.format(vol))
+                logger.debug('Volume unmuted and changed to {}'.format(vol))
             else:
                 logger.debug('Volume muted')
 

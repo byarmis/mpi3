@@ -16,6 +16,7 @@ from mpi3.model.constants import (
 
 logger = logging.getLogger(__name__)
 
+
 class PlaybackStates(object):
     def __init__(self):
         _state_list = ['NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT']
@@ -55,8 +56,10 @@ class Volume(object):
         self._array = list(range(0, low_vol_max, low_vol_stepsize))
         self._array += list(range(low_vol_max, 100 + high_vol_stepsize, high_vol_stepsize))
 
-        if desired_default in self._array:
-            self.current_volume = desired_default
+        for loc, val in enumerate(self._array):
+            if val == desired_default:
+                self._current_vol_ptr = loc
+                break
 
         else:
             # Get the difference between the desired and actual possible
@@ -66,16 +69,20 @@ class Volume(object):
                 # Find the value that's closest to the desired
                 # Go highest to lowest, find the first one that's less than desired
                 if val > 0:
-                    self.current_volume = self._array[loc]
+                    self._current_vol_ptr = len(diff) - loc
                     break
             else:
                 # Can't find anything close. Set the first non-mute
                 logger.warning('Cannot find any volumes less than the desired default.  '
-                               'Setting it to zero')
-                self.current_volume = 0
+                               'Setting it to as quiet as possible')
+                self._current_vol_ptr = 1
 
         self._set_volume()
-        self._old_volume = None
+        self._old_vol_ptr = None
+
+    @property
+    def current_volume(self):
+        return self._array[self._current_vol_ptr]
 
     def __str__(self):
         if self.current_volume == 100:
@@ -86,14 +93,10 @@ class Volume(object):
             return '{:02.0f}'.format(self.current_volume)
 
     def _change_val(self, amt):
-        v = self.current_volume
-        if amt < 0 and v == 0:
-            logger.info('Cannot go lower than 0')
-        elif amt > 0 and v == 100:
-            logger.info('Cannot go higher than 100')
+        if not 0 <= self._current_vol_ptr + amt <= len(self._array) :
+            logger.debug('Cannot go out of bounds for volume change, not doing anything')
         else:
-            a = self._array
-            self.current_volume = a[a.index(v) + amt]
+            self._current_vol_ptr += amt
             self._set_volume()
 
     def _set_volume(self):
@@ -110,25 +113,25 @@ class Volume(object):
 
     @property
     def mute(self):
-        if self.current_volume > 0:
+        if self._current_vol_ptr > 0:
             # Mute
 
             # Save the current volume
-            self._old_volume = self.current_volume
+            self._old_vol_ptr = self._current_vol_ptr
             # Set the new value
-            self.current_volume = 0
+            self._current_vol_ptr = 0
 
-        elif self._old_volume is not None:
+        elif self._old_vol_ptr is not None:
             # Unmute
-            self.current_volume = self._old_volume
-            # Null it out?
-            self._old_volume = None
+            self._current_vol_ptr = self._old_vol_ptr
+            # and null it out?
+            self._old_vol_ptr = None
 
         else:
             # lol idk?
             logger.warning('Not sure to mute or unmute\n\tcurrent volume: {}\n\told volume: {}'.format(
-                    self.current_volume,
-                    self._old_volume
+                    self._current_vol_ptr,
+                    self._old_vol_ptr
             ))
 
         self._set_volume()
@@ -243,7 +246,7 @@ class Model(object):
 
         self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
         self.menu = Menu(config=config, db=self.database)
-        self.title = Title(state=self.playback_state, vol=self.volume.current_volume)
+        self.title = Title(state=self.playback_state, vol=self.volume.current_volume_amt)
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist is selected-- the filters need to be

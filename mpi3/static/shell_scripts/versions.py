@@ -16,5 +16,6 @@ python_ver = run(['python3', '--version'],
                  stdout=PIPE).stdout.decode('utf-8')
 
 text = PapirusTextPos(rotation=90)
-text.AddText('{linux_ver}\n\n{python_ver}\nPapirus:\n{papirus_ver}\n\nMPi3:\n{mpi3_ver}'.format(**locals()),
-             size=15)
+text.AddText('{linux_ver}\n\n{python_ver}\nPapirus:\n{papirus_ver}\n\nMPi3:\n{mpi3_ver}'.format(
+        **locals()),
+        size=15)

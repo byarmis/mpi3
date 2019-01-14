@@ -42,3 +42,38 @@ SELECT COUNT(*)
 FROM library
 {filter_statement}
 ;'''
+
+CREATE_ALBUMS = '''
+CREATE TABLE albums (
+      id    INTEGER PRIMARY KEY AUTOINCREMENT
+    , album TEXT
+);'''
+
+INSERT_ALBUMS = '''
+INSERT INTO albums (album)
+SELECT album 
+FROM library
+WHERE 
+    album IS NOT NULL
+    AND album != ''
+GROUP BY album
+ORDER BY album
+;'''
+
+CREATE_ARTISTS = '''
+CREATE TABLE artists (
+      id     INTEGER PRIMARY KEY AUTOINCREMENT
+    , artist TEXT
+);'''
+
+INSERT_ARTISTS = '''
+INSERT INTO artists (artist)
+SELECT artist
+FROM library
+WHERE 
+    artist IS NOT NULL
+    AND artist != ''
+GROUP BY artist
+ORDER BY artist
+;'''
+

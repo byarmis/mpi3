@@ -6,6 +6,7 @@ import logging
 import string
 import os
 import re
+from functools import lru_cache
 
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
@@ -13,7 +14,13 @@ from mutagen.easyid3 import EasyID3
 from mpi3 import xor
 from mpi3.model.SQL import (
     CREATE_LIBRARY,
+    CREATE_ALBUMS,
+    CREATE_ARTISTS,
+
     INSERT_SONGS,
+    INSERT_ALBUMS,
+    INSERT_ARTISTS,
+
     GET_PLAYLIST,
     GET_BY_ID,
     GET_COUNT,
@@ -132,6 +139,8 @@ class Database(object):
 
         self.create_db()
         self.scan_libraries()
+        self.insert(INSERT_ALBUMS)
+        self.insert(INSERT_ARTISTS)
 
     def create_db(self):
         if os.path.isfile(self.db_file):
@@ -142,6 +151,8 @@ class Database(object):
 
         with OpenConnection(self.db_file) as db:
             db.execute(CREATE_LIBRARY)
+            db.execute(CREATE_ALBUMS)
+            db.execute(CREATE_ARTISTS)
 
     def scan_libraries(self):
         logger.info('Scanning following directory(s):{}'.format('\n\t'.join(self.dirs)))
@@ -159,9 +170,8 @@ class Database(object):
 
                         self.adder.add(os.path.join(dirpath, f))
 
+    @lru_cache
     def get_count(self, filters=None):
-        # If we haven't already gotten the count, get it
-        # Otherwise, we can just return what we already have
         with OpenConnection(self.db_file) as db:
             filter_statement = self._get_filters(filters)
             c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
@@ -195,6 +205,9 @@ class Database(object):
 
         logger.debug('Retrieved following playlist: {}'.format(p))
         return p
+
+    def get_paths(self, ids):
+        pass
 
     def get_by_id(self, ids, limit_clause='', paths=False, titles=False):
         assert paths | xor | titles, 'Paths xor titles have to be passed'
@@ -232,8 +245,17 @@ class Database(object):
 
     @staticmethod
     def _get_filters(filters):
-        if filters:
-            filter_list = ['{} = {}'.format(k, v) for k, v in filters.items()]
-            return 'WHERE {}'.format('\nAND '.join(filter_list))
-        else:
-            return ''
+        # {'artist': ['a'], 'album':['b','c']}
+        if filters is not None:
+            filter_list = []
+            for k in filters:
+                for v in filters[k]:
+                    filter_list.append('{} = {}'.format(k, v))
+            filter_str = 'WHERE {}'.format('\nAND '.join(filter_list))
+            logger.debug('Filter generated: {}'.format(filter_str))
+            return filter_str
+        return ''
+
+    def insert(self, query):
+        with OpenConnection(self.db_file) as db:
+            db.execute(query)

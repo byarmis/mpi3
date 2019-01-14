@@ -1,41 +1,41 @@
 home:
-    - songs:
-        name: Songs
-        type: song_list
-        get_type: title
+  - songs:
+      name: Songs
+      type: song_list
+      get_type: title
 
-    - albums:
-        name: Albums
-        type: song_list
-        get_type: album
+  - albums:
+      name: Albums
+      type: song_list
+      get_type: album
 
-    - artists:
-        name: Artists
-        type: song_list
-        get_type: artist
+  - artists:
+      name: Artists
+      type: song_list
+      get_type: artist
 
-    - settings:
-        name: Settings
-        type: menu
+  - settings:
+      name: Settings
+      type: menu
 
-        items:
-            - shutdown:
-                name: Shutdown
-                type: shell
-                command: shutdown.sh
+      items:
+        - shutdown:
+            name: Shutdown
+            type: shell
+            command: shutdown.sh
 
-            - about:
-                name: About
-                type: shell
-                command: versions.py
+        - about:
+            name: About
+            type: shell
+            command: versions.py
 
-            - update:
-                name: Update
-                type: shell
-                command: update.sh
+        - update:
+            name: Update
+            type: shell
+            command: update.sh
 
-            - reboot:
-                name: Reboot
-                type: shell
-                command: reboot.sh
+        - reboot:
+            name: Reboot
+            type: shell
+            command: reboot.sh
 
