@@ -170,7 +170,7 @@ class Database(object):
 
                         self.adder.add(os.path.join(dirpath, f))
 
-    @lru_cache
+    @lru_cache()
     def get_count(self, filters=None):
         with OpenConnection(self.db_file) as db:
             filter_statement = self._get_filters(filters)
@@ -246,7 +246,7 @@ class Database(object):
     @staticmethod
     def _get_filters(filters):
         # {'artist': ['a'], 'album':['b','c']}
-        if filters is not None:
+        if filters :
             filter_list = []
             for k in filters:
                 for v in filters[k]:

@@ -5,8 +5,8 @@ parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$parent_path"
 cd ..
 
-papirus-clear
-papirus-draw ./imgs/sleeping.bmp -t resize -r 90
+papirus-write "Powering down" --rotation 90 --fsize 16
 sleep 1
+papirus-draw ./imgs/sleeping.bmp --type resize --rotation 90
 
 sudo poweroff

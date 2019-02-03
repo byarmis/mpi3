@@ -19,23 +19,8 @@ home:
       type: menu
 
       items:
-        - shutdown:
-            name: Shutdown
-            type: shell
-            command: shutdown.sh
-
-        - about:
-            name: About
-            type: shell
-            command: versions.py
-
-        - update:
-            name: Update
-            type: shell
-            command: update.sh
-
-        - reboot:
-            name: Reboot
-            type: shell
-            command: reboot.sh
+        - About: versions.py
+        - Shutdown: shutdown.sh
+        - Reboot: reboot.sh
+        - Update: update.sh
 

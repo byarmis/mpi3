@@ -27,11 +27,10 @@ class PlaybackStates(object):
                          'REPEAT': 'o'}
 
         self._iterator = cycle(_states(*_state_list))
-        self.state = self.next()
+        self.state = next(self._iterator)
 
     def next(self):
         self.state = next(self._iterator)
-        return self.state
 
     def __str__(self):
         return self._mapping[self.state]
@@ -88,16 +87,18 @@ class Volume(object):
         if self.current_volume == 100:
             return '/\\'  # Max
         elif self.current_volume == 0:
-            return '\/'  # Min
+            return '\\/'  # Min
         else:
             return '{:02.0f}'.format(self.current_volume)
 
     def _change_val(self, amt):
-        if not 0 <= self._current_vol_ptr + amt <= len(self._array) :
+        if not 0 <= self._current_vol_ptr + amt <= len(self._array):
             logger.debug('Cannot go out of bounds for volume change, not doing anything')
         else:
             self._current_vol_ptr += amt
             self._set_volume()
+
+        return self.current_volume
 
     def _set_volume(self):
         call(['amixer', 'sset', 'PCM', '{}%'.format(self.current_volume)])
@@ -246,7 +247,7 @@ class Model(object):
 
         self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
         self.menu = Menu(config=config, db=self.database)
-        self.title = Title(state=self.playback_state, vol=self.volume.current_volume_amt)
+        self.title = Title(state=self.playback_state, vol=self.volume.current_volume)
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist is selected-- the filters need to be
@@ -260,7 +261,7 @@ class Model(object):
 
     def next_playback_state(self):
         logger.debug('Playback state was: {}...'.format(self.playback_state))
-        self.playback_state = self.playback_state.next()
+        self.playback_state.next()
         logger.debug('... and is now {}'.format(self.playback_state))
 
     def get_path(self, song_ids):

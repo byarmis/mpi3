@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
 import logging
+import os
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,30 @@ class Button(ViewItem):
     def on_click(self):
         if self._on_click is not None:
             self._on_click()
+
+
+class ShellButton(Button):
+    def __init__(self, text, directory, shell_script):
+        super(ShellButton, self).__init__(text=text)
+        if not directory.endswith('/'):
+            directory += '/'
+        self.shell_script = os.path.expanduser(directory + shell_script)
+
+    def __repr__(self):
+        return 'SBUTTON: {}'.format(self.text)
+
+    def __str__(self):
+        return self.text
+
+    def button_type(self):
+        return 'SHELL'
+
+    def on_click(self):
+        logger.debug('Clicking in ShellButton. Running {}'.format(self.shell_script))
+
+        # TODO: Make calling ShellButton's script as sudo optional/configurable
+        subprocess.call(['sudo ' + self.shell_script], shell=True)
+        return True
 
 
 class SongButton(Button):

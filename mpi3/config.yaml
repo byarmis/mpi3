@@ -27,3 +27,6 @@ volume:
   stepsize_low: 2
   stepsize_high: 10
   low_max: 10
+menu:
+  file: ~/mpi3/mpi3/static/menus/layout.yaml
+  shell_scripts: ~/mpi3/mpi3/static/shell_scripts/

@@ -27,8 +27,8 @@ class Renderer(object):
         self.partial_update = False
 
     def render_title(self, title):
-        logger.debug('Rendering title')
-        self._draw.text((0, 0), title, font=self.tfont, fill=self.BLACK)
+        logger.debug('Rendering title: {} ({})'.format(title, type(title)))
+        self._draw.text((0, 0), str(title), font=self.tfont, fill=self.BLACK)
 
     def render_cursor(self, i):
         logger.debug('Rendering cursor')

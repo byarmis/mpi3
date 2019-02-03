@@ -4,13 +4,13 @@
 import logging
 from datetime import datetime as dt
 
-from mpi3.model.menu_items import Button, MenuButton, SongButton, ViewItem
+from mpi3.model.menu_items import Button, MenuButton, SongButton, ViewItem, ShellButton
 from mpi3.model.constants import CURSOR_DIR
 
 logger = logging.getLogger(__name__)
 
 
-class Stack(object):
+class Stack:
     def __init__(self, items=None):
         self.stack = items or []
 
@@ -33,7 +33,7 @@ class Stack(object):
         return self.stack == other.stack
 
 
-class SongMenu(object):
+class SongMenu:
     # What's on screen at the moment
 
     def __init__(self, page_size, song_list):
@@ -73,14 +73,48 @@ class SongMenu(object):
         return self._cursor_move(CURSOR_DIR.UP)
 
 
-class Menu(object):
+class SettingsMenu:
+    def __init__(self, directory, items, cursor_val=1):
+        logger.debug('SetingsMenu items: {}'.format(items))
+        self.cursor_val = cursor_val
+        self.buttons = []
+        for item in items:
+            self.buttons.append(ShellButton(text=list(item.keys())[0],
+                                            directory=directory,
+                                            shell_script=list(item.values())[0]))
+
+    def on_click(self):
+        return self.buttons[self.cursor_val].on_click()
+
+    def cursor_down(self):
+        if self.cursor_val == len(self.buttons) - 1:
+            self.cursor_val = 0
+        else:
+            self.cursor_val += 1
+
+    def cursor_up(self):
+        if self.cursor_val == 0:
+            self.cursor_val = len(self.buttons) - 1
+        else:
+            self.cursor_val -= 1
+
+    def items(self):
+        return (str(b) for b in self.buttons)
+
+
+class Menu:
     # All menus
     def __init__(self, config, db):
         self.config = config
         self.is_home = True
         self.page_size = self.config['computed']['page_size']
         self.db = db
+        self._layout = self.config['menu']['layout']['home']
         self._menu_stack = Stack([self.generate_home()])
+
+    @property
+    def items(self):
+        return self._menu_stack.peek().items()
 
     def cursor_down(self):
         return self._menu_stack.peek().cursor_down()
@@ -93,13 +127,18 @@ class Menu(object):
         return True
 
     def generate_home(self):
-        from mpi3.model.model import SongList
-        f = lambda x: None
+        logger.debug(self._layout)
+        return SettingsMenu(directory=self.config['menu']['shell_scripts'],
+                            items=self._layout[-1]['settings']['items'],
+                            cursor_val=0)
 
-        return SongMenu(page_size=self.page_size,
-                        song_list=SongList(db=self.db,
-                                           page_size=self.page_size,
-                                           play_song=f))
+        # from mpi3.model.model import SongList
+        # f = lambda x: None
+        #
+        # return SongMenu(page_size=self.page_size,
+        #                 song_list=SongList(db=self.db,
+        #                                    page_size=self.page_size,
+        #                                    play_song=f))
         # return IndividualMenu(page_size=self.config['computed']['page_size'],
         #                       items=[MenuButton(menu_type='MENU', text='Music'),
         #                              MenuButton(menu_type='MENU', text='Settings'),
@@ -112,15 +151,16 @@ class Menu(object):
         #     return p
 
     def on_click(self):
-        if self._menu_stack.peek().cursor.value > 0:
+        if self._menu_stack.peek().cursor_val > 0 or len(self._menu_stack) == 1:
             # May change the screen or may have side-effects (change the current songlist / playlist)
-            return self._menu_stack.peek().on_click()
+            self._menu_stack.peek().on_click()
         else:
+            logger.debug('Going back a menu')
             # They clicked the back button
             self._menu_stack.pop()
 
-            # Always re-render
-            return True
+        # Always re-render
+        return True
 
 
 class Title(ViewItem):

@@ -40,7 +40,9 @@ class Player(object):
         logger.debug('Player initialization complete')
 
         # First render-- complete rerender
-        self.view.render(title='TITLE', items=['first', 'second', 'third'], cursor_val=self.model.cursor_val,
+        self.view.render(title=self.model.title,
+                         items=self.model.menu.items,
+                         cursor_val=self.model.cursor_val,
                          partial=False)
 
     def initialize_mpg123(self):
@@ -90,7 +92,7 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up()
-            self.view.render(page=self.model.page,
+            self.view.render(items=self.model.menu.items,
                              cursor_val=self.model.cursor_val,
                              title=self.model.title,
                              partial=redraw)
@@ -107,7 +109,7 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
             redraw = self.model.menu.cursor_down()
-            self.view.render(page=self.model.page,
+            self.view.render(items=self.model.menu.items,
                              cursor_val=self.model.cursor_val,
                              title=self.model.title,
                              partial=redraw)
@@ -125,9 +127,10 @@ class Player(object):
         logger.debug('SELECT')
 
         if self.button_mode == MODE.NORMAL:
-            raise NotImplementedError("Clicking on things isn't working yet.  Shut up")
-            self.model.selected.on_click()
-            self.view.render(page=self.model.page,
+            logger.debug('clicking')
+            redraw = self.model.menu.on_click()
+            logger.debug('clicked')
+            self.view.render(items=self.model.menu.items,
                              cursor_val=self.model.cursor_val,
                              title=self.model.title,
                              partial=redraw)
@@ -147,11 +150,11 @@ class Player(object):
             self.process.stdin.write('PAUSE\n')
             logger.debug('Song paused')
 
-        # Have to rerender to update the volume and playback mode info
-        self.view.render(page=self.model.page,
-                         cursor_val=self.model.cursor_val,
-                         title=self.model.title,
-                         partial=False)  # Never do a full redraw when just changing one of those two
+            # Have to rerender to update the volume and playback mode info
+            self.view.render(items=self.model.menu.items,
+                             cursor_val=self.model.cursor_val,
+                             title=self.model.title,
+                             partial=False)  # Never do a full redraw when just changing one of those two
 
     def play(self, _):
         logger.debug('PLAY')
@@ -171,7 +174,7 @@ class Player(object):
             self.button_mode = MODE.NORMAL
 
         # Have to rerender to update the volume and playback mode info
-        self.view.render(page=self.model.page,
+        self.view.render(items=self.model.menu.items,
                          cursor_val=self.model.cursor_val,
                          title=self.model.title,
                          partial=False)  # Never do a full redraw when just changing one of those two
@@ -192,7 +195,7 @@ class Player(object):
             self.button_mode = MODE.NORMAL
 
         # Have to rerender to update the volume and playback mode info
-        self.view.render(page=self.model.page,
+        self.view.render(items=self.model.menu.items,
                          cursor_val=self.model.cursor_val,
                          title=self.model.title,
                          partial=False)  # Never do a full redraw when just changing one of those two

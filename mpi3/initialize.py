@@ -19,6 +19,13 @@ def get_config(config):
         logger.debug('yaml file loaded')
 
     c['computed'] = {}
+
+    menu_path = os.path.expanduser(c['menu']['file'])
+    with open(menu_path) as f:
+        logger.debug('Loading menu config')
+        c['menu']['layout'] = yaml.load(f)
+        logger.debug('yaml file loaded')
+
     c['computed']['page_size'] = (c['screen_size']['height'] - c['font']['title_size']) // c['font']['size']
 
     return c
