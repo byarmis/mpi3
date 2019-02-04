@@ -20,6 +20,7 @@ home:
 
       items:
         - About: versions.py
+        - Audio Test: audio_test.sh
         - Shutdown: shutdown.sh
         - Reboot: reboot.sh
         - Update: update.sh
