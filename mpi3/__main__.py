@@ -63,6 +63,7 @@ if __name__ == '__main__':
 
     if args.log_file.lower().strip() == 'false':
         import sys
+
         logging.basicConfig(level=log_level, stream=sys.stdout)
 
     else:
@@ -80,6 +81,7 @@ if __name__ == '__main__':
 
         logger.addHandler(handler)
 
+    # noinspection PyBroadException
     try:
         logger.info('Initializing player')
         p = Player(args=args)
@@ -87,7 +89,19 @@ if __name__ == '__main__':
         p.run()
         logger.critical('Running player-- COMPLETE')
 
-    finally:
-        from papirus import Papirus
+    except BaseException as e:
+        if str(e):
+            # noinspection PyPep8Naming
+            from papirus import PapirusText as PT
 
-        Papirus().clear()
+            logger.warning('Exception raised:')
+            logger.warning(repr(e))
+
+            PT().write(repr(e), size=13)
+
+        else:
+            # noinspection PyPep8Naming
+            from papirus import PapirusImage as PI
+
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            PI(rotation=90).write(os.path.join(dir_path, 'static', 'imgs', 'exclamation.bmp'))
