@@ -17,7 +17,7 @@ from mpi3.model.constants import (
 logger = logging.getLogger(__name__)
 
 
-class PlaybackStates(object):
+class PlaybackStates:
     def __init__(self):
         _state_list = ['NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT']
         _states = namedtuple('PLAYBACK_STATES', _state_list)
@@ -39,7 +39,7 @@ class PlaybackStates(object):
         return self.state
 
 
-class Volume(object):
+class Volume:
     #  0   2  4  6  8
     # {10} 20 30 40 50
     #  60  70 80 90 100
@@ -139,7 +139,7 @@ class Volume(object):
         return self.current_volume
 
 
-class SongList(object):
+class SongList:
     def __init__(self, db, play_song, page_size, filters=None):
         self.db = db
         self.filters = filters or dict()
@@ -238,7 +238,7 @@ class SongList(object):
         return self.selected_id
 
 
-class Model(object):
+class Model:
     def __init__(self, config, play_song):
         self.database = Database(config['music'])
         self.volume = Volume(config['volume'])
@@ -247,7 +247,7 @@ class Model(object):
 
         self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
         self.menu = Menu(config=config, db=self.database)
-        self.title = Title(state=self.playback_state, vol=self.volume.current_volume)
+        self.title = Title(state=self.playback_state, vol=self.volume)
 
     def transfer_viewlist_to_playlist(self):
         # This will be called when a song in a playlist is selected-- the filters need to be

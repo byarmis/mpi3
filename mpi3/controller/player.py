@@ -40,10 +40,7 @@ class Player(object):
         logger.debug('Player initialization complete')
 
         # First render-- complete rerender
-        self.view.render(title=self.model.title,
-                         items=self.model.menu.items,
-                         cursor_val=self.model.cursor_val,
-                         partial=False)
+        self.render(partial=False)
 
     def initialize_mpg123(self):
         logger.debug('Initializing mpg123 process...')
@@ -92,14 +89,12 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up()
-            self.view.render(items=self.model.menu.items,
-                             cursor_val=self.model.cursor_val,
-                             title=self.model.title,
-                             partial=redraw)
+            self.render(partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
             vol = self.model.volume.increase
             logger.debug('Volume increased to {}'.format(vol))
+            self.render(partial=True)
 
         elif self.button_mode == MODE.PLAYBACK:
             logger.info('Playing next song')
@@ -109,15 +104,13 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
             redraw = self.model.menu.cursor_down()
-            self.view.render(items=self.model.menu.items,
-                             cursor_val=self.model.cursor_val,
-                             title=self.model.title,
-                             partial=redraw)
+            self.render(partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
             logger.debug('Decreasing volume')
             vol = self.model.volume.decrease
             logger.debug('Volume decreased to {}'.format(vol))
+            self.render(partial=True)
 
         elif self.button_mode == MODE.PLAYBACK:
             logger.info('Playing previous song')
@@ -130,10 +123,7 @@ class Player(object):
             logger.debug('clicking')
             redraw = self.model.menu.on_click()
             logger.debug('clicked')
-            self.view.render(items=self.model.menu.items,
-                             cursor_val=self.model.cursor_val,
-                             title=self.model.title,
-                             partial=redraw)
+            self.render(partial=redraw)
             return
 
         elif self.button_mode == MODE.VOLUME:
@@ -150,11 +140,9 @@ class Player(object):
             self.process.stdin.write('PAUSE\n')
             logger.debug('Song paused')
 
-            # Have to rerender to update the volume and playback mode info
-            self.view.render(items=self.model.menu.items,
-                             cursor_val=self.model.cursor_val,
-                             title=self.model.title,
-                             partial=False)  # Never do a full redraw when just changing one of those two
+        # Have to rerender to update the volume and playback mode info
+        # Never do a full redraw when just changing one of those two
+        self.render(partial=False)
 
     def play(self, _):
         logger.debug('PLAY')
@@ -174,10 +162,8 @@ class Player(object):
             self.button_mode = MODE.NORMAL
 
         # Have to rerender to update the volume and playback mode info
-        self.view.render(items=self.model.menu.items,
-                         cursor_val=self.model.cursor_val,
-                         title=self.model.title,
-                         partial=False)  # Never do a full redraw when just changing one of those two
+        # Never do a full redraw when just changing one of those two
+        self.render(partial=False)
 
     def vol(self, _):
         logger.debug('VOL pressed')
@@ -194,11 +180,13 @@ class Player(object):
             # Setting the button mode back to normal
             self.button_mode = MODE.NORMAL
 
-        # Have to rerender to update the volume and playback mode info
-        self.view.render(items=self.model.menu.items,
+        self.render(partial=False)
+
+    def render(self, partial):
+        self.view.render(title=self.model.title,
+                         items=self.model.menu.items,
                          cursor_val=self.model.cursor_val,
-                         title=self.model.title,
-                         partial=False)  # Never do a full redraw when just changing one of those two
+                         partial=partial)
 
     def run(self):
         logger.debug('Running player')

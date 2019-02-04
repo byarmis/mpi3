@@ -170,7 +170,7 @@ class Title(ViewItem):
 
     def __str__(self):
         return '{state}  {vol}'.format(state=self.state,
-                                       vol=self.vol)
+                                       vol=self.vol.current_volume)
 
     def __repr__(self):
         return 'TITLE'

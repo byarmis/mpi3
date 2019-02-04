@@ -27,8 +27,9 @@ class Renderer(object):
         self.partial_update = False
 
     def render_title(self, title):
-        logger.debug('Rendering title: {} ({})'.format(title, type(title)))
-        self._draw.text((0, 0), str(title), font=self.tfont, fill=self.BLACK)
+        logger.debug('Rendering title: {}'.format(title))
+        self._draw.text((0, 0), str(title),
+                        font=self.tfont, fill=self.BLACK)
 
     def render_cursor(self, i):
         logger.debug('Rendering cursor')
@@ -58,10 +59,11 @@ class Renderer(object):
         self._draw.rectangle((0, 0) + self.size, fill=self.WHITE, outline=self.WHITE)
 
     def update(self, partial):
-        logger.debug('Updating ({})'.format('partially' if self.partial_update else 'completely'))
         if self.partial_update or partial:
+            logger.debug('Updating (partially)')
             self.papirus.partial_update()
         else:
+            logger.debug('Updating (completely)')
             self.papirus.update()
             self.partial_update = True
 
