@@ -250,10 +250,11 @@ class Model:
         self.title = Title(state=self.playback_state, vol=self.volume)
 
     def transfer_viewlist_to_playlist(self):
+        raise NotImplementedError
         # This will be called when a song in a playlist is selected-- the filters need to be
         # transferred over and the position saved (so if you start a playlist halfway through, it'll be fine)
-        self.playlist.filters = {k: v for k, v in self.menu.viewlist.filters.items()}
-        self.playlist.song_counter = self.menu.viewlist.song_counter
+        # self.playlist.filters = {k: v for k, v in self.menu.viewlist.filters.items()}
+        # self.playlist.song_counter = self.menu.viewlist.song_counter
 
     @property
     def has_songs_in_playlist(self):

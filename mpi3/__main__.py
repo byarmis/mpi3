@@ -63,7 +63,6 @@ if __name__ == '__main__':
 
     if args.log_file.lower().strip() == 'false':
         import sys
-
         logging.basicConfig(level=log_level, stream=sys.stdout)
 
     else:
@@ -87,6 +86,7 @@ if __name__ == '__main__':
         logger.info('Running player')
         p.run()
         logger.critical('Running player-- COMPLETE')
+
     finally:
         from papirus import Papirus
 
