@@ -4,7 +4,6 @@
 import argparse
 import logging
 import os
-from datetime import datetime
 
 from mpi3.controller.player import Player
 
@@ -37,11 +36,25 @@ if __name__ == '__main__':
     parser.add_argument('--log-file', '-lf',
                         dest='log_file',
                         type=str,
-                        default=datetime.now().strftime('~/mpi3/%Y-%m-%d|%H:%M:%S.log'),
+                        default='~/mpi3/logs/mpi3.log',
                         help='''The file to log to, if any.  
                                 If "False" (case-insensitive), will log to stdout instead.  
-                                Defaults to ~/mpi3/<current date>_mpi3.log
-                                ''')
+                                Defaults to ~/mpi3/logs/mpi3.log''')
+
+    parser.add_argument('--log-file-count', '-lfc',
+                        dest='log_file_count',
+                        type=int,
+                        default=5,
+                        help='''The number of log file backups to keep
+                                Defaults to 5''')
+
+    parser.add_argument('--log-file-size', '-lfs',
+                        dest='log_file_size',
+                        type=int,
+                        default=500,
+                        help='''The maximum size, in megabytes, that the log file should
+                                grow to.
+                                Defaults to 500''')
 
     args = parser.parse_args()
 
@@ -52,8 +65,21 @@ if __name__ == '__main__':
         import sys
 
         logging.basicConfig(level=log_level, stream=sys.stdout)
+
     else:
-        logging.basicConfig(level=log_level, filename=os.path.expanduser(args.log_file))
+        import logging.handlers
+
+        log_file = os.path.expanduser(args.log_file)
+        if not os.path.exists(os.path.dirname(log_file)):
+            os.makedirs(os.path.dirname(log_file))
+
+        logging.basicConfig(level=log_level, filename=log_file)
+        handler = logging.handlers.RotatingFileHandler(
+                log_file,
+                maxBytes=1024 * args.log_file_size,
+                backupCount=args.log_file_count)
+
+        logger.addHandler(handler)
 
     try:
         logger.info('Initializing player')
