@@ -8,8 +8,6 @@ sudo apt-get update
 papirus-write "Upgrading" --rotation 90
 sudo apt-get upgrade -y
 sudo apt-get autoremove -y
-papirus-write "Updating RPi" --rotation 90
-sudo rpi-update
 # TODO: Add papirus and pip updates
 papirus-write "Update complete" --rotation 90
 sleep 3

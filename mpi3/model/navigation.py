@@ -3,8 +3,9 @@
 
 import logging
 from datetime import datetime as dt
+from cachetools import cached, TTLCache
 
-from mpi3.model.menu_items import Button, MenuButton, SongButton, ViewItem, ShellButton
+from mpi3.model.menu_items import Button, MenuButton, SongButton, ShellButton
 from mpi3.model.constants import CURSOR_DIR
 
 logger = logging.getLogger(__name__)
@@ -163,22 +164,21 @@ class Menu:
         return True
 
 
-class Title(ViewItem):
+class Title:
     def __init__(self, state, vol):
         self.state = state
         self.vol = vol
 
     def __str__(self):
-        return '{state}  {vol}'.format(state=self.state,
-                                       vol=self.vol)
+        return '{state}   {time}  {vol}'.format(state=self.state,
+                                                vol=self.vol,
+                                                time=self.time)
 
     def __repr__(self):
         return 'TITLE'
 
-    def button_type(self):
-        pass
-
     @property
+    @cached(cache=TTLCache(maxsize=1, ttl=10))
     def time(self):
         # No idea how reliable this is
         logger.warning('Getting the time ({})-- is this reliable?'.format(dt.now().strftime('%I:%M')))

@@ -192,18 +192,6 @@ class Player(object):
         logger.debug('Running player')
 
         while True:
-            Event().wait(1)
-        #
-        # # START Testing
-        # logger.debug('Playing music started')
-        #
-        # first_song = self.model.get_first_song_id()
-        # logger.debug('Trying to play: {}'.format(first_song))
-        # self.play_song(first_song)
-        # while self.model.has_songs_in_playlist:
-        #     self.process.wait()
-        #     self.change_song(direction=DIR.FORWARD)
-        #
-        # # END Testing
-
-        logger.debug('Running player-- complete')
+            Event().wait(self.config['heartbeat_refresh'])
+            logger.debug('Heartbeat rerender')
+            self.render(partial=True)

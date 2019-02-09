@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from abc import ABCMeta, abstractmethod
+
 import logging
 import os
 import subprocess
@@ -8,23 +8,7 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 
-class ViewItem(object):
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def __repr__(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def __str__(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def button_type(self):
-        return 'VIEW ITEM'
-
-
-class Button(ViewItem):
+class Button:
     # A line item on the screen that can optionally be clicked
     def __init__(self, text, on_click=None):
         self.text = text
@@ -46,10 +30,13 @@ class Button(ViewItem):
 
 class ShellButton(Button):
     def __init__(self, text, directory, shell_script):
-        super(ShellButton, self).__init__(text=text)
         if not directory.endswith('/'):
             directory += '/'
-        self.shell_script = os.path.expanduser(directory + shell_script)
+        shell_script = os.path.expanduser(directory + shell_script)
+
+        func = lambda: subprocess.call(['sudo ' + shell_script], shell=True)
+
+        super(ShellButton, self).__init__(text=text, on_click=func)
 
     def __repr__(self):
         return 'SBUTTON: {}'.format(self.text)
@@ -59,13 +46,6 @@ class ShellButton(Button):
 
     def button_type(self):
         return 'SHELL'
-
-    def on_click(self):
-        logger.debug('Clicking in ShellButton. Running {}'.format(self.shell_script))
-
-        # TODO: Make calling ShellButton's script as sudo optional/configurable
-        subprocess.call(['sudo ' + self.shell_script], shell=True)
-        return True
 
 
 class SongButton(Button):
