@@ -11,15 +11,15 @@ from mutagen.easyid3 import EasyID3 as ID3
 
 
 NUMBERS = [
-        'ZERO'
+        'zero'
         , 'one'
-        , 'TWO'
+        , 'two'
         , 'three'
-        , 'FOUR'
+        , 'four'
         , 'five'
-        , 'SIX'
+        , 'six'
         , 'seven'
-        , 'EIGHT'
+        , 'eight'
         , 'nine'
 ]
 
@@ -62,6 +62,6 @@ if __name__ == '__main__':
         audio = MP3(filename, ID3=ID3)
         audio['title'] = get_num_as_str(i)
         audio['artist'] = random.choice(artists)
-        audio['artist'] = random.choice(albums)
+        audio['album'] = random.choice(albums)
         audio.save()
 
