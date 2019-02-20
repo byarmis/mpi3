@@ -57,10 +57,10 @@ Since this will be headless, you probably don't need a windows manager so the le
 If you want to add music later, you could also use `sftp` to wirelessly upload it.
 I originally wanted to use Dropbox to synchronize music folders, but Dropbox doesn't have an ARM version (yet?).
 5. Note that the above three steps can be done by plugging the micro SD card into another computer and navigating the file system (Windows can only see the `/boot/` folder and not any others).
-6. Boot up, SSH in, and update
+6. Boot up, SSH in, update, and install
     ```bash
       $ sudo apt update; sudo apt upgrade
-      $ sudo apt install rpi-update git mpg123 sqlite3 python3-dev
+      $ sudo apt install rpi-update git mpg123 sqlite3 python3-dev libjpeg8-dev
       $ sudo apt autoremove
       $ sudo rpi-update
     ```
