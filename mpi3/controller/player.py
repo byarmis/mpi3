@@ -28,6 +28,7 @@ class Player(object):
 
         self.is_playing = False
         self.process = None
+        self.can_refresh = True
 
         initialize.setup_buttons(self.config,
                                  up=self.up,
@@ -121,7 +122,9 @@ class Player(object):
 
         if self.button_mode == MODE.NORMAL:
             logger.debug('clicking')
+            self.can_refresh = False
             redraw = self.model.menu.on_click()
+            self.can_refresh = True
             logger.debug('clicked')
             self.render(partial=redraw)
             return
@@ -193,5 +196,7 @@ class Player(object):
 
         while True:
             Event().wait(self.config['heartbeat_refresh'])
-            logger.debug('Heartbeat rerender')
-            self.render(partial=True)
+
+            if self.can_refresh:
+                logger.debug('Heartbeat rerender')
+                self.render(partial=True)
