@@ -42,30 +42,34 @@ class SongMenu:
         self.page = 0
         self.song_list = song_list
         self.page_size = page_size
-        self.cursor_val = 1
-
-        self.strings = [str(i) for i in self.song_list]
+        self.INITIAL_CURSOR_VAL = 0
+        self.cursor_val = self.INITIAL_CURSOR_VAL  # TODO: Change to 1 when multimenus are a thing
 
     def _cursor_move(self, direction):
         self.song_list.song_counter += direction
 
-        if 0 < self.cursor_val < len(self.song_list):
+        if 0 <= self.cursor_val + direction < len(self.song_list):
+            logger.debug('Moving the cursor within a page')
             self.cursor_val += direction
 
             # Don't full redraw
-            return False
+            return True
         else:
+            logger.debug('Moving the cursor and changing pages')
+
             # Change pages and reset the cursor location to the first item
-            self.cursor_val = 1
+            self.cursor_val = self.INITIAL_CURSOR_VAL
             self.page += direction
             if self.page < 0:
                 # If we went backwards, go to the previous page
                 self.page = (len(self.song_list) // self.page_size) + 1
+
+            self.song_list.page = self.page
             self.song_list.refresh_list()
 
             self.strings = [str(i) for i in self.song_list]
             # Full redraw
-            return True
+            return False
 
     def cursor_down(self):
         return self._cursor_move(CURSOR_DIR.DOWN)
@@ -73,10 +77,14 @@ class SongMenu:
     def cursor_up(self):
         return self._cursor_move(CURSOR_DIR.UP)
 
+    def items(self):
+        return [str(i) for i in self.song_list]
+
 
 class SettingsMenu:
     def __init__(self, directory, items, cursor_val=1):
-        logger.debug('SetingsMenu items: {}'.format(items))
+        logger.debug('Generating Settings Menu')
+
         self.cursor_val = cursor_val
         self.buttons = []
         for item in items:
@@ -105,11 +113,12 @@ class SettingsMenu:
 
 class Menu:
     # All menus
-    def __init__(self, config, db):
+    def __init__(self, config, db, song_list):
         self.config = config
         self.is_home = True
         self.page_size = self.config['computed']['page_size']
         self.db = db
+        self.song_list = song_list
         self._layout = self.config['menu']['layout']['home']
         self._menu_stack = Stack([self.generate_home()])
 
@@ -128,10 +137,11 @@ class Menu:
         return True
 
     def generate_home(self):
-        logger.debug(self._layout)
-        return SettingsMenu(directory=self.config['menu']['shell_scripts'],
-                            items=self._layout[-1]['settings']['items'],
-                            cursor_val=0)
+        # return SettingsMenu(directory=self.config['menu']['shell_scripts'],
+        #                     items=self._layout[-1]['settings']['items'],
+        #                     cursor_val=0)
+        return SongMenu(page_size=self.page_size,
+                        song_list=self.song_list)
 
         # from mpi3.model.model import SongList
         # f = lambda x: None

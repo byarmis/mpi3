@@ -90,7 +90,9 @@ class Player(object):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up()
+            logger.debug('and rerendering {}'.format('partially' if redraw else 'totally'))
             self.render(partial=redraw)
+            # self.render(partial=False)
 
         elif self.button_mode == MODE.VOLUME:
             vol = self.model.volume.increase

@@ -24,7 +24,6 @@ class Renderer(object):
         self.font = font
         self.tfont = tfont
 
-        self.partial_update = False
 
     def render_title(self, title):
         logger.debug('Rendering title: {}'.format(title))
@@ -59,13 +58,12 @@ class Renderer(object):
         self._draw.rectangle((0, 0) + self.size, fill=self.WHITE, outline=self.WHITE)
 
     def update(self, partial):
-        if self.partial_update or partial:
+        if partial:
             logger.debug('Updating (partially)')
             self.papirus.partial_update()
         else:
             logger.debug('Updating (completely)')
             self.papirus.update()
-            self.partial_update = True
 
 
 class View(object):

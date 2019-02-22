@@ -149,28 +149,22 @@ class SongList:
         self.song_counter = 0
         self.page = 0
 
-        self.id_list = []
-        self.title_list = []
-        self.path_list = []
+        self.song_list_item = namedtuple('song_list_item', ['title', 'path'])
+        self.song_list = []
 
         self.refresh_list()
 
     def __iter__(self):
-        for song_id, title, path in zip(self.id_list, self.title_list, self.path_list):
-            yield SongButton(song_id=song_id,
-                             song_title=title,
-                             song_path=path,
-                             play_song=self.play_song)
+        yield from self.song_list
 
     def __len__(self):
-        return self._cnt
+        return len(self.song_list)
 
     def refresh_list(self):
-        self.id_list = self.db.get_list(filters=self.filters,
-                                        limit=self.page_size,
-                                        offset=self.page * self.page_size)
-        self.title_list = self.db.get_by_id(ids=self.id_list, titles=True)
-        self.path_list = self.db.get_by_id(ids=self.id_list, paths=True)
+        id_list = self.db.get_list(filters=self.filters,
+                                   limit=self.page_size,
+                                   offset=self.page * self.page_size)
+        self.song_list = self.db.get_buttons_by_id(ids=id_list, limit=self.page_size, play_func=self.play_song)
 
     @property
     def selected_id(self):
@@ -182,7 +176,7 @@ class SongList:
             self.page = self.song_counter // self.page_size
             self.refresh_list()
 
-        return self.id_list[self.song_counter - start]
+        return self.song_list[self.song_counter - start]
 
     def get_next_id(self, state):
         if state in ('NORMAL', 'LOOP'):
@@ -207,7 +201,7 @@ class SongList:
             # randint is inclusive, we want exclusive
             new = random.randint(0, self._cnt - 1)
 
-            while len(self.id_list) > 1 and old != new:
+            while len(self._cnt) > 1 and old == new:
                 # Make sure that we're getting a new song
                 # ID if there is a new one to get
                 # Worst case O(inf), expected case O(1)
@@ -246,7 +240,7 @@ class Model:
         self.playback_state = PlaybackStates()
 
         self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
-        self.menu = Menu(config=config, db=self.database)
+        self.menu = Menu(config=config, db=self.database, song_list=self.playlist)
         self.title = Title(state=self.playback_state, vol=self.volume)
 
     def transfer_viewlist_to_playlist(self):
@@ -265,14 +259,14 @@ class Model:
         self.playback_state.next()
         logger.debug('... and is now {}'.format(self.playback_state))
 
-    def get_path(self, song_ids):
-        # Gets the path or paths for one or more songs
-        if song_ids is not None:
-            return self.database.get_by_id(song_ids, paths=True)
-
-    def get_names(self, song_ids):
-        if song_ids is not None:
-            return self.database.get_by_id(song_ids, titles=True)
+    # def get_path(self, song_ids):
+    #     # Gets the path or paths for one or more songs
+    #     if song_ids is not None:
+    #         return self.database.get_by_id(song_ids, paths=True)
+    #
+    # def get_names(self, song_ids):
+    #     if song_ids is not None:
+    #         return self.database.get_by_id(song_ids, titles=True)
 
     def get_next_song(self, direction):
         next_id = None

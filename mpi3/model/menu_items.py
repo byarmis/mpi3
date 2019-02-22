@@ -35,14 +35,7 @@ class ShellButton(Button):
         shell_script = os.path.expanduser(directory + shell_script)
 
         func = lambda: subprocess.call(['sudo ' + shell_script], shell=True)
-
         super(ShellButton, self).__init__(text=text, on_click=func)
-
-    def __repr__(self):
-        return 'SBUTTON: {}'.format(self.text)
-
-    def __str__(self):
-        return self.text
 
     def button_type(self):
         return 'SHELL'
@@ -50,25 +43,12 @@ class ShellButton(Button):
 
 class SongButton(Button):
     # A button that's a song
-    def __init__(self, song_id, song_title, song_path, play_song):
-        super(SongButton, self).__init__(text=song_title)
-        self.button_type = 'SONG'
-        self.play_song = play_song
-        self.song_id = song_id
-        self.song_path = song_path
-
-    def __str__(self):
-        return self.text
-
-    def __repr__(self):
-        return self.song_path
+    def __init__(self, song_title, song_path, play_song):
+        func = lambda: play_song(song_path)
+        super(SongButton, self).__init__(text=song_title, on_click=func)
 
     def button_type(self):
         return 'SONG'
-
-    def on_click(self):
-        # Play by song ID
-        self.play_song(self.song_path)
 
 
 class MenuButton(Button):

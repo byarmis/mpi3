@@ -25,6 +25,7 @@ from mpi3.model.SQL import (
     GET_BY_ID,
     GET_COUNT,
 )
+from mpi3.model.menu_items import SongButton
 
 logger = logging.getLogger(__name__)
 
@@ -61,21 +62,25 @@ class BatchAdder(object):
         self.buffer_size = config['buffer_load_size']
         self.db_file = config['library']
 
-        self.stop_chars = {c: None for c in string.punctuation + string.digits}
+        # self.stop_chars = {c: None for c in string.punctuation + string.digits}
+        self.stop_chars = {c: None for c in string.punctuation}  # + string.digits}
 
-        self.bad_tracks = {int(i) for i in config['bad_tracks']}
+        if config.get('bad_tracks') is not None:
+            self.bad_tracks = {int(i) for i in config.get('bad_tracks', [])}
+        else:
+            self.bad_tracks = set()
 
         if self.buffer_size > 500:
             logger.warning('A buffer load size of {} was selected, '
                            'but the max is 500'.format(self.buffer_size))
             self.buffer_size = 500
 
-    def add(self, item):
-        tags = self._extract_tags(item)
+    def add(self, item=None, force_push=False):
+        if item is not None:
+            tags = self._extract_tags(item)
+            self._buffer.append(tags)
 
-        self._buffer.append(tags)
-
-        if len(self._buffer) >= self.buffer_size:
+        if len(self._buffer) >= self.buffer_size or force_push:
             self._add_buffer()
 
     def _extract_tags(self, f):
@@ -94,7 +99,7 @@ class BatchAdder(object):
                 # We removed too much!  Put it back?
                 sortable_title = title
         else:
-            title = None
+            title = f.split('/')[-1]
             sortable_title = None
 
         album = album[0].strip() if album else None
@@ -169,6 +174,7 @@ class Database(object):
                             continue
 
                         self.adder.add(os.path.join(dirpath, f))
+        self.adder.add(force_push=True)
 
     @lru_cache()
     def get_count(self, filters=None):
@@ -206,55 +212,46 @@ class Database(object):
         logger.debug('Retrieved following playlist: {}'.format(p))
         return p
 
-    def get_paths(self, ids):
-        pass
+    def get_buttons_by_id(self, ids, limit=None, play_func=None):
+        get_types = ('filepath', 'title')
 
-    def get_by_id(self, ids, limit_clause='', paths=False, titles=False):
-        assert paths | xor | titles, 'Paths xor titles have to be passed'
-        get_type = None
+        limit_clause = '' if limit is None else 'LIMIT %s' % limit
+        res = {}
+        for get_type in get_types:
+            q = GET_BY_ID.format(get_type=get_type,
+                                 limit_clause=limit_clause,
+                                 param_count=','.join('?' for _ in ids))
+            logger.debug('Running the following query: {}'.format(q))
+            with OpenConnection(self.db_file) as db:
+                try:
+                    r = db.execute(q, ids).fetchall()
 
-        if paths is not None:
-            logger.debug('Getting paths by ID')
-            get_type = 'filepath'
-        elif titles is not None:
-            logger.debug('Getting titles by ID')
-            get_type = 'title'
+                    if len(r) == 2:
+                        id_to_str = {r[0]: r[1]}
+                    else:
+                        id_to_str = dict(r)
+                    logger.debug('Dictionary acquired: {}'.format(id_to_str))
+                    res[get_type] = id_to_str
 
-        q = GET_BY_ID.format(get_type=get_type,
-                             limit_clause=limit_clause,
-                             param_count=','.join('?' for _ in ids))
-        logger.debug('Running the following query: {}'.format(q))
-        with OpenConnection(self.db_file) as db:
-            try:
-                res = db.execute(q, ids).fetchall()
-                # Should return ((3, 'path'), (4,'path')...)
-                # or ((3, 'name'), (4, 'name')...)
-            except IndexError:
-                raise NoSong('No songs found for {} = [{}]'.format(get_type, ','.join(ids)))
+                except IndexError:
+                    raise NoSong('No songs found for {} = [{}]'.format(get_type, ','.join(ids)))
 
-        if len(res) == 2:
-            id_to_str = {res[0]: res[1]}
-        else:
-            id_to_str = dict(res)
-        logger.debug('Dictionary acquired: {}'.format(id_to_str))
-
-        try:
-            return [id_to_str[i] for i in ids]
-        except TypeError:
-            return [id_to_str[ids]]
+        return [SongButton(song_title=res['title'][ID],
+                           song_path=res['filepath'][ID],
+                           play_song=play_func) for ID in ids]
 
     @staticmethod
     def _get_filters(filters):
         # {'artist': ['a'], 'album':['b','c']}
-        if filters :
+        filter_str = ''
+        if filters:
             filter_list = []
             for k in filters:
                 for v in filters[k]:
                     filter_list.append('{} = {}'.format(k, v))
             filter_str = 'WHERE {}'.format('\nAND '.join(filter_list))
-            logger.debug('Filter generated: {}'.format(filter_str))
-            return filter_str
-        return ''
+        logger.debug('Filter generated: {}'.format(filter_str))
+        return filter_str
 
     def insert(self, query):
         with OpenConnection(self.db_file) as db:
