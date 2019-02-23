@@ -160,6 +160,9 @@ class SongList:
     def __len__(self):
         return len(self.song_list)
 
+    def __getitem__(self, item):
+        return self.song_list[item]
+
     def refresh_list(self):
         id_list = self.db.get_list(filters=self.filters,
                                    limit=self.page_size,

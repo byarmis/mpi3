@@ -80,6 +80,9 @@ class SongMenu:
     def items(self):
         return [str(i) for i in self.song_list]
 
+    def on_click(self):
+        return self.song_list[self.cursor_val].on_click()
+
 
 class SettingsMenu:
     def __init__(self, directory, items, cursor_val=1):
@@ -137,11 +140,11 @@ class Menu:
         return True
 
     def generate_home(self):
-        # return SettingsMenu(directory=self.config['menu']['shell_scripts'],
-        #                     items=self._layout[-1]['settings']['items'],
-        #                     cursor_val=0)
-        return SongMenu(page_size=self.page_size,
-                        song_list=self.song_list)
+        return SettingsMenu(directory=self.config['menu']['shell_scripts'],
+                            items=self._layout[-1]['settings']['items'],
+                            cursor_val=0)
+        # return SongMenu(page_size=self.page_size,
+        #                 song_list=self.song_list)
 
         # from mpi3.model.model import SongList
         # f = lambda x: None

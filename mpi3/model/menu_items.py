@@ -44,6 +44,9 @@ class ShellButton(Button):
 class SongButton(Button):
     # A button that's a song
     def __init__(self, song_title, song_path, play_song):
+        self.song_title = song_title
+        self.song_path = song_path
+
         func = lambda: play_song(song_path)
         super(SongButton, self).__init__(text=song_title, on_click=func)
 

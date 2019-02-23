@@ -4,6 +4,7 @@
 import logging
 import subprocess
 from threading import Event
+from datetime import datetime as dt
 
 from mpi3 import initialize
 from mpi3.model.model import Model
@@ -42,13 +43,30 @@ class Player(object):
 
         # First render-- complete rerender
         self.render(partial=False)
+        self.last_refresh = dt.now()
 
     def initialize_mpg123(self):
         logger.debug('Initializing mpg123 process...')
         self.process = subprocess.Popen(['mpg123', '--remote'],
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE)
-        logger.debug('\t...complete')
+        # q = Queue()
+# t = Thread(target=enqueue_output, args=(p.stdout, q))
+# t.daemon = True  # thread dies with the program
+# t.start()
+#
+# ... do other things here
+#
+# read line without blocking
+# try:
+#     line = q.get_nowait()  # or q.get(timeout=.1)
+# except Empty:
+#     print('no output yet')
+#
+# else:  # got line
+#     pass
+    # ... do something with line
+    #     logger.debug('\t...complete')
 
     def change_song(self, direction):
         if self.process.poll():
@@ -70,19 +88,19 @@ class Player(object):
             logger.debug("There isn't a next song to play.  Stopping")
             self.stop()
 
-    def play_song(self, song_id):
+    def play_song(self, song_path: str):
         # Plays song by ID
-        song_path = self.model.get_path(song_id)[0]
         if self.is_playing:
             logger.debug('Stopping current song')
             self.stop()
 
+        logger.debug(song_path)
         logger.debug('Playing {}'.format(song_path))
-        self.process.stdin.write('LOAD {}\n'.format(song_path))
+        self.process.stdin.write('LOAD {}\n'.format(song_path).encode('utf-8'))
         self.is_playing = True
 
     def stop(self):
-        self.process.stdin.write('STOP\n')
+        self.process.stdin.write(b'STOP\n')
         self.is_playing = False
         logger.debug('Song stopped')
 
@@ -92,7 +110,6 @@ class Player(object):
             redraw = self.model.menu.cursor_up()
             logger.debug('and rerendering {}'.format('partially' if redraw else 'totally'))
             self.render(partial=redraw)
-            # self.render(partial=False)
 
         elif self.button_mode == MODE.VOLUME:
             vol = self.model.volume.increase
@@ -142,7 +159,7 @@ class Player(object):
         elif self.button_mode == MODE.PLAYBACK:
             # Pause
             self.is_playing = False
-            self.process.stdin.write('PAUSE\n')
+            self.process.stdin.write(b'PAUSE\n')
             logger.debug('Song paused')
 
         # Have to rerender to update the volume and playback mode info
@@ -197,8 +214,33 @@ class Player(object):
         logger.debug('Running player')
 
         while True:
-            Event().wait(self.config['heartbeat_refresh'])
+            # logger.debug('reading stdin')
+            # for line in self.process.stdout:
 
-            if self.can_refresh:
+            # logger.debug(self.process.stdout.communicate())
+            # if sys.stdout.readline() == '@P 0\n':
+            #     logger.debug('alsdjfalskdjfaslkdjfasldfkjjko')
+            # logger.debug('read stdin')
+
+            if self.can_refresh and \
+                    (dt.now() - self.last_refresh).total_seconds() >= self.config['heartbeat_refresh']:
                 logger.debug('Heartbeat rerender')
                 self.render(partial=True)
+                self.last_refresh = dt.now()
+
+
+# import sys
+# from subprocess import PIPE, Popen
+# from threading import Thread
+#
+# from queue import Queue, Empty
+
+
+# def enqueue_output(out, queue):
+#     for line in iter(out.readline, b''):
+#         queue.put(line)
+#     out.close()
+#
+#
+# p = Popen(['myprogram.exe'], stdout=PIPE, bufsize=1)
+
