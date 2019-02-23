@@ -96,19 +96,22 @@ class SettingsMenu:
                                             shell_script=list(item.values())[0]))
 
     def on_click(self):
-        return self.buttons[self.cursor_val].on_click()
+        _ = self.buttons[self.cursor_val].on_click()
+        return False
 
     def cursor_down(self):
         if self.cursor_val == len(self.buttons) - 1:
             self.cursor_val = 0
         else:
             self.cursor_val += 1
+        return True
 
     def cursor_up(self):
         if self.cursor_val == 0:
             self.cursor_val = len(self.buttons) - 1
         else:
             self.cursor_val -= 1
+        return True
 
     def items(self):
         return (str(b) for b in self.buttons)
