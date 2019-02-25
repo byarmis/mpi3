@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
+from subprocess import PIPE, Popen
+from threading import Thread
+
+from queue import Queue, Empty
+
 import logging
 import subprocess
 from threading import Event
@@ -12,12 +18,60 @@ from mpi3.view.view import View
 from mpi3.model.constants import (
     DIRECTION as DIR,
     BUTTON_MODE as MODE,
+    PLAYBACK_STATES,
+    mpg_123_STATES,
 )
 
 logger = logging.getLogger(__name__)
 
+from threading import Thread
+from queue import Queue, Empty
 
-# FIXME: What happens when we reach the end of a song and it just stops?
+
+class NonBlockingStreamReader:
+
+    def __init__(self, stream):
+        '''
+        stream: the stream to read from.
+                Usually a process' stdout or stderr.
+        '''
+
+        self._s = stream
+        self._q = Queue()
+        self.music_playback_state = None
+
+        def _populateQueue(stream, queue):
+            '''
+            Collect lines from 'stream' and put them in 'quque'.
+            '''
+
+            while True:
+                line = stream.readline()
+                if line:
+                    queue.put(line)
+                else:
+                    raise UnexpectedEndOfStream
+
+        self._t = Thread(target=_populateQueue,
+                         args=(self._s, self._q))
+        self._t.daemon = True
+        self._t.start()  # start collecting lines from the stream
+
+    def readline(self, timeout=None):
+        try:
+            g = self._q.get(block=timeout is not None,
+                            timeout=timeout).strip()
+            try:
+                return mpg_123_STATES[g]
+            except KeyError:
+                return None
+        except Empty:
+            return None
+
+
+class UnexpectedEndOfStream(Exception):
+    pass
+
 
 class Player(object):
     def __init__(self, args):
@@ -45,28 +99,18 @@ class Player(object):
         self.render(partial=False)
         self.last_refresh = dt.now()
 
+        self.music_playback_state = None
+
     def initialize_mpg123(self):
         logger.debug('Initializing mpg123 process...')
         self.process = subprocess.Popen(['mpg123', '--remote'],
                                         stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE)
-        # q = Queue()
-# t = Thread(target=enqueue_output, args=(p.stdout, q))
-# t.daemon = True  # thread dies with the program
-# t.start()
-#
-# ... do other things here
-#
-# read line without blocking
-# try:
-#     line = q.get_nowait()  # or q.get(timeout=.1)
-# except Empty:
-#     print('no output yet')
-#
-# else:  # got line
-#     pass
-    # ... do something with line
-    #     logger.debug('\t...complete')
+                                        stdout=subprocess.PIPE,
+                                        bufsize=1)
+        self.process.stdin.write(b'SILENCE\n')
+        self.process.stdin.flush()
+
+        self.nbsr = NonBlockingStreamReader(self.process.stdout)
 
     def change_song(self, direction):
         if self.process.poll():
@@ -81,7 +125,7 @@ class Player(object):
         if next_song:
             logger.debug("Next song's id is: {}".format(next_song))
             logger.debug('Playing next song')
-            self.play_song(next_song)
+            self.play_song(next_song.song_path)
             logger.debug('Playing next song started')
 
         else:
@@ -97,10 +141,12 @@ class Player(object):
         logger.debug(song_path)
         logger.debug('Playing {}'.format(song_path))
         self.process.stdin.write('LOAD {}\n'.format(song_path).encode('utf-8'))
+        self.process.stdin.flush()
         self.is_playing = True
 
     def stop(self):
         self.process.stdin.write(b'STOP\n')
+        self.process.stdin.flush()
         self.is_playing = False
         logger.debug('Song stopped')
 
@@ -160,6 +206,7 @@ class Player(object):
             # Pause
             self.is_playing = False
             self.process.stdin.write(b'PAUSE\n')
+            self.process.stdin.flush()
             logger.debug('Song paused')
 
         # Have to rerender to update the volume and playback mode info
@@ -212,35 +259,17 @@ class Player(object):
 
     def run(self):
         logger.debug('Running player')
+        import time
 
         while True:
-            # logger.debug('reading stdin')
-            # for line in self.process.stdout:
+            time.sleep(0.1)
 
-            # logger.debug(self.process.stdout.communicate())
-            # if sys.stdout.readline() == '@P 0\n':
-            #     logger.debug('alsdjfalskdjfaslkdjfasldfkjjko')
-            # logger.debug('read stdin')
+            music_state = self.nbsr.readline()
+            if music_state == PLAYBACK_STATES.DONE:
+                self.change_song(direction=DIR.FORWARD)
 
             if self.can_refresh and \
                     (dt.now() - self.last_refresh).total_seconds() >= self.config['heartbeat_refresh']:
                 logger.debug('Heartbeat rerender')
                 self.render(partial=True)
                 self.last_refresh = dt.now()
-
-
-# import sys
-# from subprocess import PIPE, Popen
-# from threading import Thread
-#
-# from queue import Queue, Empty
-
-
-# def enqueue_output(out, queue):
-#     for line in iter(out.readline, b''):
-#         queue.put(line)
-#     out.close()
-#
-#
-# p = Popen(['myprogram.exe'], stdout=PIPE, bufsize=1)
-

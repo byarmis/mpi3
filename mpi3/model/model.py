@@ -149,7 +149,6 @@ class SongList:
         self.song_counter = 0
         self.page = 0
 
-        self.song_list_item = namedtuple('song_list_item', ['title', 'path'])
         self.song_list = []
 
         self.refresh_list()
@@ -182,22 +181,23 @@ class SongList:
         return self.song_list[self.song_counter - start]
 
     def get_next_id(self, state):
-        if state in ('NORMAL', 'LOOP'):
+        s = state.state
+        if s in ('NORMAL', 'LOOP'):
             # Go to the next song in the list
             if self.song_counter < self._cnt:
                 self.song_counter += 1
             else:
                 return None
 
-        if state == 'LOOP':
+        if s == 'LOOP':
             # Wrap around
             self.song_counter %= self._cnt
 
-        elif state == 'REPEAT':
+        elif s == 'REPEAT':
             # Play the same song over and over
             pass
 
-        elif state == 'SHUFFLE':
+        elif s == 'SHUFFLE':
             # Get a random new song ID that isn't the current one
             old = self.song_counter
 
@@ -272,12 +272,14 @@ class Model:
     #         return self.database.get_by_id(song_ids, titles=True)
 
     def get_next_song(self, direction):
+        logger.debug('Getting next song')
         next_id = None
         if direction == DIR.FORWARD:
             next_id = self.playlist.get_next_id(state=self.playback_state)
         elif direction == DIR.BACKWARD:
             next_id = self.playlist.get_prev_id(state=self.playback_state)
 
+        logger.debug(next_id)
         return next_id
 
     @property
