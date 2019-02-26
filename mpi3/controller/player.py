@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-from subprocess import PIPE, Popen
-from threading import Thread
-
-from queue import Queue, Empty
-
 import logging
 import subprocess
-from threading import Event
 from datetime import datetime as dt
+from queue import Queue, Empty
+from threading import Thread
 
 from mpi3 import initialize
 from mpi3.model.model import Model
@@ -24,65 +19,111 @@ from mpi3.model.constants import (
 
 logger = logging.getLogger(__name__)
 
-from threading import Thread
-from queue import Queue, Empty
-
 
 class NonBlockingStreamReader:
-
     def __init__(self, stream):
-        '''
+        """
         stream: the stream to read from.
                 Usually a process' stdout or stderr.
-        '''
+                
+        from http://eyalarubas.com/python-subproc-nonblock.html
+        """
 
         self._s = stream
         self._q = Queue()
-        self.music_playback_state = None
 
-        def _populateQueue(stream, queue):
-            '''
-            Collect lines from 'stream' and put them in 'quque'.
-            '''
+        def _populate_queue(stream_provider, queue):
+            """
+            Collect lines from 'stream_provider' and put them in 'queue'.
+            """
 
             while True:
-                line = stream.readline()
-                if line:
-                    queue.put(line)
-                else:
-                    raise UnexpectedEndOfStream
+                line = stream_provider.readline()
+                assert line, 'Unexpected end of stream'
+                queue.put(line)
 
-        self._t = Thread(target=_populateQueue,
+        self._t = Thread(target=_populate_queue,
                          args=(self._s, self._q))
         self._t.daemon = True
         self._t.start()  # start collecting lines from the stream
 
-    def readline(self, timeout=None):
+    def readline(self, timeout: float = None):
         try:
-            g = self._q.get(block=timeout is not None,
-                            timeout=timeout).strip()
-            try:
-                return mpg_123_STATES[g]
-            except KeyError:
-                return None
+            return self._q.get(block=timeout is not None,
+                               timeout=timeout).strip()
         except Empty:
             return None
 
 
-class UnexpectedEndOfStream(Exception):
-    pass
+class MusicPlayer:
+    def __init__(self) -> None:
+        self.process = subprocess.Popen(['mpg123', '--remote'],
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        bufsize=1)
+        self._write('SILENCE')
+
+        self.stream_reader = NonBlockingStreamReader(self.process.stdout)
+
+        self.last_state = None
+        self.last_poll = None
+
+    def _write(self, msg: str) -> None:
+        self.process.stdin.write(str.encode(msg + '\n'))
+        self.process.stdin.flush()
+
+    def poll(self) -> None:
+        self.last_poll = dt.now()
+        self.last_state = self.stream_reader.readline() or self.last_state
+
+    def play(self, song_path: str) -> None:
+        if self.process.poll():
+            logger.warning('Reinitializing MusicPlayer')
+            self.__init__()
+
+        # Plays song by ID
+        if self.state == PLAYBACK_STATES.PLAY:
+            logger.debug('Stopping current song')
+            self.stop()
+
+        logger.debug('Playing {}'.format(song_path))
+
+        self._write('LOAD {}'.format(song_path))
+
+    def stop(self) -> None:
+        self._write('STOP')
+        logger.debug('Song stopped')
+
+    def pause(self) -> None:
+        self._write('PAUSE')
+        logger.debug('Song paused')
+
+    @property
+    def is_paused(self) -> bool:
+        return mpg_123_STATES.get(self.state) == PLAYBACK_STATES.PAUSE
+
+    @property
+    def is_playing(self) -> bool:
+        return mpg_123_STATES.get(self.state) == PLAYBACK_STATES.PLAY
+
+    @property
+    def state(self) -> mpg_123_STATES:
+        if self.state is None:
+            self.poll()
+
+        if (dt.now() - self.last_poll).total_seconds() > 1:
+            self.poll()
+        return mpg_123_STATES.get(self.last_state)
 
 
-class Player(object):
+class MPi3Player(object):
     def __init__(self, args):
+        self.player = MusicPlayer()
         self.config = initialize.get_config(args.config_file)
-        self.model = Model(config=self.config, play_song=self.play_song)
+        self.model = Model(config=self.config, play_song=self.player.play)
         self.view = View(config=self.config)
 
         self.button_mode = MODE.NORMAL
-
-        self.is_playing = False
-        self.process = None
         self.can_refresh = True
 
         initialize.setup_buttons(self.config,
@@ -92,69 +133,30 @@ class Player(object):
                                  play=self.play,
                                  volume=self.vol)
 
-        self.initialize_mpg123()
         logger.debug('Player initialization complete')
 
         # First render-- complete rerender
         self.render(partial=False)
         self.last_refresh = dt.now()
 
-        self.music_playback_state = None
-
-    def initialize_mpg123(self):
-        logger.debug('Initializing mpg123 process...')
-        self.process = subprocess.Popen(['mpg123', '--remote'],
-                                        stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE,
-                                        bufsize=1)
-        self.process.stdin.write(b'SILENCE\n')
-        self.process.stdin.flush()
-
-        self.nbsr = NonBlockingStreamReader(self.process.stdout)
-
     def change_song(self, direction):
-        if self.process.poll():
-            logger.debug('Player is not running.  Starting...')
-            self.initialize_mpg123()
-
         logger.debug('Getting next song')
 
-        # PEP-572 would be helpful here, I think?
+        # PEP-572 would be helpful here, I think? I am the walrus coo coo ca choo
         next_song = self.model.get_next_song(direction)
 
-        if next_song:
-            logger.debug("Next song's id is: {}".format(next_song))
-            logger.debug('Playing next song')
-            self.play_song(next_song.song_path)
-            logger.debug('Playing next song started')
+        if next_song is not None:
+            self.player.play(next_song.song_path)
 
         else:
             logger.debug("There isn't a next song to play.  Stopping")
-            self.stop()
-
-    def play_song(self, song_path: str):
-        # Plays song by ID
-        if self.is_playing:
-            logger.debug('Stopping current song')
-            self.stop()
-
-        logger.debug(song_path)
-        logger.debug('Playing {}'.format(song_path))
-        self.process.stdin.write('LOAD {}\n'.format(song_path).encode('utf-8'))
-        self.process.stdin.flush()
-        self.is_playing = True
-
-    def stop(self):
-        self.process.stdin.write(b'STOP\n')
-        self.process.stdin.flush()
-        self.is_playing = False
-        logger.debug('Song stopped')
+            self.player.stop()
 
     def up(self, _):
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up()
-            logger.debug('and rerendering {}'.format('partially' if redraw else 'totally'))
+            logger.debug('and re-rendering {}'.format('partially' if redraw else 'totally'))
             self.render(partial=redraw)
 
         elif self.button_mode == MODE.VOLUME:
@@ -196,18 +198,11 @@ class Player(object):
 
         elif self.button_mode == MODE.VOLUME:
             # MUTE
-            vol = self.model.volume.mute
-            if vol:
-                logger.debug('Volume unmuted and changed to {}'.format(vol))
-            else:
-                logger.debug('Volume muted')
+            self.model.volume.mute()
 
         elif self.button_mode == MODE.PLAYBACK:
             # Pause
-            self.is_playing = False
-            self.process.stdin.write(b'PAUSE\n')
-            self.process.stdin.flush()
-            logger.debug('Song paused')
+            self.player.pause()
 
         # Have to rerender to update the volume and playback mode info
         # Never do a full redraw when just changing one of those two
@@ -264,12 +259,12 @@ class Player(object):
         while True:
             time.sleep(0.1)
 
-            music_state = self.nbsr.readline()
+            music_state = self.player.state
             if music_state == PLAYBACK_STATES.DONE:
                 self.change_song(direction=DIR.FORWARD)
 
             if self.can_refresh and \
                     (dt.now() - self.last_refresh).total_seconds() >= self.config['heartbeat_refresh']:
-                logger.debug('Heartbeat rerender')
+                logger.debug('Heartbeat re-render')
                 self.render(partial=True)
                 self.last_refresh = dt.now()

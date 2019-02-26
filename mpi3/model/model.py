@@ -3,9 +3,10 @@
 
 import logging
 import random
-from collections import namedtuple
+from collections import namedtuple, deque
 from itertools import cycle
 from subprocess import call
+from typing import Optional
 
 from mpi3.model.db import Database
 from mpi3.model.navigation import Menu, Title
@@ -29,14 +30,29 @@ class PlaybackStates:
         self._iterator = cycle(_states(*_state_list))
         self.state = next(self._iterator)
 
-    def next(self):
+    def next(self) -> None:
         self.state = next(self._iterator)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._mapping[self.state]
 
-    def __repr__(self):
-        return self.state
+    # def __repr__(self):
+    #     return self.state
+
+
+class SongBuffer:
+    def __init__(self, limit: int) -> None:
+        self._deque = deque(maxlen=limit)
+
+    def add(self, song_counter: int) -> None:
+        self._deque.append(song_counter)
+
+    def back(self) -> None:
+        self._deque.pop()
+
+    @property
+    def song_counter(self) -> int:
+        return self._deque[-1]
 
 
 class Volume:
@@ -46,6 +62,8 @@ class Volume:
 
     def __init__(self, config):
         logger.debug('Initializing volume object')
+
+        self.muted = False
 
         desired_default = config['default']
         low_vol_stepsize = config['stepsize_low']
@@ -84,7 +102,9 @@ class Volume:
         return self._array[self._current_vol_ptr]
 
     def __str__(self):
-        if self.current_volume == 100:
+        if self.muted:
+            return 'XX'
+        elif self.current_volume == 100:
             return '/\\'  # Max
         elif self.current_volume == 0:
             return '\\/'  # Min
@@ -112,21 +132,25 @@ class Volume:
         # TODO: Mute vs 0%?  How's the noise?
         return self._change_val(-1)
 
-    @property
-    def mute(self):
+    def mute(self) -> None:
         if self._current_vol_ptr > 0:
             # Mute
-
             # Save the current volume
             self._old_vol_ptr = self._current_vol_ptr
             # Set the new value
             self._current_vol_ptr = 0
+            self.muted = True
+
+            logger.debug('Volume was {} but is now muted'.format(self._array[self._old_vol_ptr]))
 
         elif self._old_vol_ptr is not None:
             # Unmute
             self._current_vol_ptr = self._old_vol_ptr
             # and null it out?
             self._old_vol_ptr = None
+            self.muted = False
+
+            logger.debug('Volume was muted but is now {}'.format(self.current_volume))
 
         else:
             # lol idk?
@@ -136,7 +160,6 @@ class Volume:
             ))
 
         self._set_volume()
-        return self.current_volume
 
 
 class SongList:
@@ -150,6 +173,7 @@ class SongList:
         self.page = 0
 
         self.song_list = []
+        self.song_buffer = SongBuffer(limit=page_size)
 
         self.refresh_list()
 
@@ -180,24 +204,23 @@ class SongList:
 
         return self.song_list[self.song_counter - start]
 
-    def get_next_id(self, state):
-        s = state.state
-        if s in ('NORMAL', 'LOOP'):
+    def get_next_id(self, s):
+        if s.state in ('NORMAL', 'LOOP'):
             # Go to the next song in the list
             if self.song_counter < self._cnt:
                 self.song_counter += 1
             else:
                 return None
 
-        if s == 'LOOP':
+        if s.state == 'LOOP':
             # Wrap around
             self.song_counter %= self._cnt
 
-        elif s == 'REPEAT':
+        elif s.state == 'REPEAT':
             # Play the same song over and over
             pass
 
-        elif s == 'SHUFFLE':
+        elif s.state == 'SHUFFLE':
             # Get a random new song ID that isn't the current one
             old = self.song_counter
 
@@ -211,26 +234,29 @@ class SongList:
                 new = random.randint(0, self._cnt - 1)
             self.song_counter = new
 
+        self.song_buffer.add(self.song_counter)
         return self.selected_id
 
-    def get_prev_id(self, state):
-        if state == 'NORMAL':
+    def get_prev_id(self, s):
+        if s.state == 'NORMAL':
             if self.song_counter > 0:
                 self.song_counter -= 1
             else:
                 return None
 
-        elif state == 'LOOP':
+        elif s.state == 'LOOP':
             self.song_counter -= 1
             if self.song_counter < 0:
                 self.song_counter %= self._cnt
 
-        elif state == 'REPEAT':
+        elif s.state == 'REPEAT':
             return self.song_counter
 
-        elif state == 'SHUFFLE':
+        elif s.state == 'SHUFFLE':
             # Random is random :)
-            return self.get_next_id('SHUFFLE')
+            # TODO: Change to random song buffer
+            self.song_buffer.back()
+            self.song_counter = self.song_buffer.song_counter
 
         return self.selected_id
 
@@ -262,22 +288,13 @@ class Model:
         self.playback_state.next()
         logger.debug('... and is now {}'.format(self.playback_state))
 
-    # def get_path(self, song_ids):
-    #     # Gets the path or paths for one or more songs
-    #     if song_ids is not None:
-    #         return self.database.get_by_id(song_ids, paths=True)
-    #
-    # def get_names(self, song_ids):
-    #     if song_ids is not None:
-    #         return self.database.get_by_id(song_ids, titles=True)
-
-    def get_next_song(self, direction):
+    def get_next_song(self, direction: DIR) -> Optional[str]:
         logger.debug('Getting next song')
         next_id = None
         if direction == DIR.FORWARD:
-            next_id = self.playlist.get_next_id(state=self.playback_state)
+            next_id = self.playlist.get_next_id(self.playback_state)
         elif direction == DIR.BACKWARD:
-            next_id = self.playlist.get_prev_id(state=self.playback_state)
+            next_id = self.playlist.get_prev_id(self.playback_state)
 
         logger.debug(next_id)
         return next_id

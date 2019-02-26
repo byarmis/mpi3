@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 
-from mpi3.controller.player import Player
+from mpi3.controller.player import MPi3Player
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # noinspection PyBroadException
     try:
         logger.info('Initializing player')
-        p = Player(args=args)
+        p = MPi3Player(args=args)
         logger.info('Running player')
         p.run()
         logger.critical('Running player-- COMPLETE')
