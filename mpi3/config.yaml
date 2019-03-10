@@ -30,3 +30,6 @@ menu:
   file: ~/mpi3/mpi3/static/menus/layout.yaml
   shell_scripts: ~/mpi3/mpi3/static/shell_scripts/
 heartbeat_refresh: 30
+env_vars:
+  HOME_DIR_mpi3: ~/mpi3/
+  HOME_DIR_papirus: ~/PaPiRus/

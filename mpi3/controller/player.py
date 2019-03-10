@@ -108,7 +108,7 @@ class MusicPlayer:
 
     @property
     def state(self) -> mpg_123_STATES:
-        if self.state is None:
+        if self.last_state is None:
             self.poll()
 
         if (dt.now() - self.last_poll).total_seconds() > 1:
@@ -116,8 +116,8 @@ class MusicPlayer:
         return mpg_123_STATES.get(self.last_state)
 
 
-class MPi3Player(object):
-    def __init__(self, args):
+class MPi3Player:
+    def __init__(self, args) -> None:
         self.player = MusicPlayer()
         self.config = initialize.get_config(args.config_file)
         self.model = Model(config=self.config, play_song=self.player.play)
@@ -146,7 +146,7 @@ class MPi3Player(object):
         next_song = self.model.get_next_song(direction)
 
         if next_song is not None:
-            self.player.play(next_song.song_path)
+            self.player.play(next_song)
 
         else:
             logger.debug("There isn't a next song to play.  Stopping")

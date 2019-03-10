@@ -3,7 +3,6 @@
 
 import logging
 from datetime import datetime as dt
-from cachetools import cached, TTLCache
 
 from mpi3.model.menu_items import Button, MenuButton, SongButton, ShellButton
 from mpi3.model.constants import CURSOR_DIR
@@ -85,7 +84,7 @@ class SongMenu:
 
 
 class SettingsMenu:
-    def __init__(self, directory, items, cursor_val=1):
+    def __init__(self, directory, items, env_vars, cursor_val=1):
         logger.debug('Generating Settings Menu')
 
         self.cursor_val = cursor_val
@@ -93,7 +92,8 @@ class SettingsMenu:
         for item in items:
             self.buttons.append(ShellButton(text=list(item.keys())[0],
                                             directory=directory,
-                                            shell_script=list(item.values())[0]))
+                                            shell_script=list(item.values())[0],
+                                            env_vars=env_vars))
 
     def on_click(self):
         _ = self.buttons[self.cursor_val].on_click()
@@ -143,11 +143,12 @@ class Menu:
         return True
 
     def generate_home(self):
-        # return SettingsMenu(directory=self.config['menu']['shell_scripts'],
-        #                     items=self._layout[-1]['settings']['items'],
-        #                     cursor_val=0)
-        return SongMenu(page_size=self.page_size,
-                        song_list=self.song_list)
+        return SettingsMenu(directory=self.config['menu']['shell_scripts'],
+                            items=self._layout[-1]['settings']['items'],
+                            cursor_val=0,
+                            env_vars=self.config['env_vars'])
+        # return SongMenu(page_size=self.page_size,
+        #                 song_list=self.song_list)
 
         # from mpi3.model.model import SongList
         # f = lambda x: None
@@ -170,14 +171,14 @@ class Menu:
     def on_click(self):
         if self._menu_stack.peek().cursor_val > 0 or len(self._menu_stack) == 1:
             # May change the screen or may have side-effects (change the current songlist / playlist)
-            self._menu_stack.peek().on_click()
+            return self._menu_stack.peek().on_click()
         else:
             logger.debug('Going back a menu')
             # They clicked the back button
             self._menu_stack.pop()
 
-        # Always re-render
-        return True
+            # Always full re-render
+            return False
 
 
 class Title:
@@ -194,7 +195,6 @@ class Title:
         return 'TITLE'
 
     @property
-    @cached(cache=TTLCache(maxsize=1, ttl=10))
     def time(self):
         # No idea how reliable this is
         logger.warning('Getting the time ({})-- is this reliable?'.format(dt.now().strftime('%I:%M')))

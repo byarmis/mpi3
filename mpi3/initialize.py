@@ -10,7 +10,7 @@ import RPi.GPIO as GPIO
 logger = logging.getLogger(__name__)
 
 
-def get_config(config):
+def get_config(config: str) -> dict:
     config_path = os.path.expanduser(config)
     logger.debug('Getting config {}'.format(config_path))
     with open(config_path) as f:
@@ -28,10 +28,13 @@ def get_config(config):
 
     c['computed']['page_size'] = (c['screen_size']['height'] - c['font']['title_size']) // c['font']['size']
 
+    for k in c['env_vars']:
+        c['env_vars'][k] = os.path.expanduser(c['env_vars'][k])
+
     return c
 
 
-def setup_buttons(config, **kwargs):
+def setup_buttons(config: dict, **kwargs) -> None:
     GPIO.setmode(GPIO.BCM)
 
     for name, val in config['buttons'].items():

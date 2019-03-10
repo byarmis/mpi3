@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-# https://stackoverflow.com/questions/24112727/
-parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-cd "$parent_path"
-cd .. # static
-cd .. # mpi3
-cd .. # root dir
-
 papirus-write "Updating: Linux" --rotation 90
 sudo apt-get update
 papirus-write "Updating: Linux Install" --rotation 90
@@ -18,7 +11,7 @@ papirus-write "Updating: Python Packages" --rotation 90
 pip3 install -r requirements.txt --upgrade --user
 
 papirus-write "Updating: PaPiRus" --rotation 90
-cd ../PaPiRus
+cd $HOME_DIR_papirus
 git checkout master
 git pull origin master
 sudo python3 setup.py install
@@ -26,4 +19,4 @@ sudo python3 setup.py install
 papirus-write "Update complete" --rotation 90
 sleep 3
 
-${parent_path}/reboot.sh
+$HOME_DIR_mpi3/mpi3/static/shell_scripts/reboot.sh

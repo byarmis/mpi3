@@ -25,16 +25,21 @@ class Button:
 
     def on_click(self):
         if self._on_click is not None:
-            self._on_click()
+            return self._on_click()
 
 
 class ShellButton(Button):
-    def __init__(self, text, directory, shell_script):
+    def __init__(self, text, directory, shell_script, env_vars):
         if not directory.endswith('/'):
             directory += '/'
         shell_script = os.path.expanduser(directory + shell_script)
 
-        func = lambda: subprocess.call(['sudo ' + shell_script], shell=True)
+        def func():
+            subprocess.Popen(['sudo --preserve-env ' + shell_script],
+                             shell=True,
+                             env={**os.environ, **env_vars}).wait()
+            return False
+
         super(ShellButton, self).__init__(text=text, on_click=func)
 
     def button_type(self):

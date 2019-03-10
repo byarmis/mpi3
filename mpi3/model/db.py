@@ -8,6 +8,8 @@ import os
 import re
 from functools import lru_cache
 
+import typing
+
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
@@ -38,24 +40,24 @@ class NoSong(Exception):
         return repr(self.value)
 
 
-class OpenConnection(object):
-    def __init__(self, db_file):
+class OpenConnection:
+    def __init__(self, db_file: str) -> None:
         self.db_file = os.path.expanduser(db_file)
         self.conn = None
         self.cursor = None
 
-    def __enter__(self):
+    def __enter__(self) -> sqlite3.Cursor:
         self.conn = sqlite3.connect(self.db_file)
         self.cursor = self.conn.cursor()
         return self.cursor
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *args, **kwargs) -> None:
         self.conn.commit()
         self.conn.close()
 
 
-class BatchAdder(object):
-    def __init__(self, config):
+class BatchAdder:
+    def __init__(self, config: dict) -> None:
         logger.info('Initializing BatchAdder')
         # _buffer is a list of tuples
         self._buffer = []
@@ -75,7 +77,7 @@ class BatchAdder(object):
                            'but the max is 500'.format(self.buffer_size))
             self.buffer_size = 500
 
-    def add(self, item=None, force_push=False):
+    def add(self, item: str = None, force_push: bool = False) -> None:
         if item is not None:
             tags = self._extract_tags(item)
             self._buffer.append(tags)
@@ -83,7 +85,7 @@ class BatchAdder(object):
         if len(self._buffer) >= self.buffer_size or force_push:
             self._add_buffer()
 
-    def _extract_tags(self, f):
+    def _extract_tags(self, f: str) -> None:
         logger.debug('Extracting tags for {}'.format(f))
         audio = MP3(f, ID3=EasyID3)
 
@@ -126,7 +128,7 @@ class BatchAdder(object):
 
         return t
 
-    def _add_buffer(self):
+    def _add_buffer(self) -> None:
         logger.debug('Adding batch of songs ({})'.format(len(self._buffer)))
         with OpenConnection(self.db_file) as db:
             db.executemany(INSERT_SONGS, self._buffer)
@@ -135,8 +137,8 @@ class BatchAdder(object):
         logger.debug('\t... complete')
 
 
-class Database(object):
-    def __init__(self, config):
+class Database:
+    def __init__(self, config: dict) -> None:
         logger.info('Initializing Database')
         self.dirs = config['directory']
         self.db_file = os.path.expanduser(config['library'])
@@ -147,7 +149,7 @@ class Database(object):
         self.insert(INSERT_ALBUMS)
         self.insert(INSERT_ARTISTS)
 
-    def create_db(self):
+    def create_db(self) -> None:
         if os.path.isfile(self.db_file):
             logger.info('Library file ({}) exists and will be removed'.format(self.db_file))
             os.remove(self.db_file)
@@ -159,7 +161,7 @@ class Database(object):
             db.execute(CREATE_ALBUMS)
             db.execute(CREATE_ARTISTS)
 
-    def scan_libraries(self):
+    def scan_libraries(self) -> None:
         logger.info('Scanning following directory(s):{}'.format('\n\t'.join(self.dirs)))
 
         for loc_raw in self.dirs:
@@ -177,7 +179,7 @@ class Database(object):
         self.adder.add(force_push=True)
 
     @lru_cache()
-    def get_count(self, filters=None):
+    def get_count(self, filters=None) -> int:
         with OpenConnection(self.db_file) as db:
             filter_statement = self._get_filters(filters)
             c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
@@ -241,7 +243,7 @@ class Database(object):
                            play_song=play_func) for ID in ids]
 
     @staticmethod
-    def _get_filters(filters):
+    def _get_filters(filters: typing.Mapping[str, typing.List[str]]) -> str:
         # {'artist': ['a'], 'album':['b','c']}
         filter_str = ''
         if filters:
@@ -253,6 +255,6 @@ class Database(object):
         logger.debug('Filter generated: {}'.format(filter_str))
         return filter_str
 
-    def insert(self, query):
+    def insert(self, query: str) -> None:
         with OpenConnection(self.db_file) as db:
             db.execute(query)
