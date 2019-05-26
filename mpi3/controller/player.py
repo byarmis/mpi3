@@ -6,6 +6,7 @@ import subprocess
 from datetime import datetime as dt
 from queue import Queue, Empty
 from threading import Thread
+from contextlib import contextmanager
 
 from mpi3 import initialize
 from mpi3.model.model import Model
@@ -39,8 +40,8 @@ class NonBlockingStreamReader:
 
             while True:
                 line = stream_provider.readline()
-                assert line, 'Unexpected end of stream'
-                queue.put(line)
+                if line is not None:
+                    queue.put(line)
 
         self._t = Thread(target=_populate_queue,
                          args=(self._s, self._q))
@@ -139,6 +140,12 @@ class MPi3Player:
         self.render(partial=False)
         self.last_refresh = dt.now()
 
+    @contextmanager
+    def render_block(self):
+        self.can_refresh = False
+        yield
+        self.can_refresh = True
+
     def change_song(self, direction):
         logger.debug('Getting next song')
 
@@ -189,9 +196,8 @@ class MPi3Player:
 
         if self.button_mode == MODE.NORMAL:
             logger.debug('clicking')
-            self.can_refresh = False
-            redraw = self.model.menu.on_click()
-            self.can_refresh = True
+            with self.render_block():
+                redraw = self.model.menu.on_click()
             logger.debug('clicked')
             self.render(partial=redraw)
             return

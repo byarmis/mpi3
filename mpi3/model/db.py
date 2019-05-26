@@ -1,33 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sqlite3
 import logging
-import string
 import os
 import re
+import sqlite3
+import string
+from typing import Tuple, Iterable, List, Dict, Callable
 from functools import lru_cache
 
-import typing
-
-from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
+from mutagen.mp3 import MP3
 
-from mpi3 import xor
 from mpi3.model.SQL import (
-    CREATE_LIBRARY,
     CREATE_ALBUMS,
     CREATE_ARTISTS,
-
-    INSERT_SONGS,
-    INSERT_ALBUMS,
-    INSERT_ARTISTS,
-
-    GET_PLAYLIST,
+    CREATE_LIBRARY,
     GET_BY_ID,
     GET_COUNT,
+    GET_PLAYLIST,
+    INSERT_ALBUMS,
+    INSERT_ARTISTS,
+    INSERT_SONGS,
 )
 from mpi3.model.menu_items import SongButton
+from mpi3.model.types import Filter
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +54,7 @@ class OpenConnection:
 
 
 class BatchAdder:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Dict) -> None:
         logger.info('Initializing BatchAdder')
         # _buffer is a list of tuples
         self._buffer = []
@@ -85,7 +82,7 @@ class BatchAdder:
         if len(self._buffer) >= self.buffer_size or force_push:
             self._add_buffer()
 
-    def _extract_tags(self, f: str) -> None:
+    def _extract_tags(self, f: str) -> Tuple:
         logger.debug('Extracting tags for {}'.format(f))
         audio = MP3(f, ID3=EasyID3)
 
@@ -129,6 +126,9 @@ class BatchAdder:
         return t
 
     def _add_buffer(self) -> None:
+        if not self._buffer:
+            return
+
         logger.debug('Adding batch of songs ({})'.format(len(self._buffer)))
         with OpenConnection(self.db_file) as db:
             db.executemany(INSERT_SONGS, self._buffer)
@@ -138,7 +138,7 @@ class BatchAdder:
 
 
 class Database:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Dict) -> None:
         logger.info('Initializing Database')
         self.dirs = config['directory']
         self.db_file = os.path.expanduser(config['library'])
@@ -146,8 +146,8 @@ class Database:
 
         self.create_db()
         self.scan_libraries()
-        self.insert(INSERT_ALBUMS)
-        self.insert(INSERT_ARTISTS)
+        self.run(INSERT_ALBUMS)
+        self.run(INSERT_ARTISTS)
 
     def create_db(self) -> None:
         if os.path.isfile(self.db_file):
@@ -176,17 +176,19 @@ class Database:
                             continue
 
                         self.adder.add(os.path.join(dirpath, f))
+
+        # Push the remaining partial buffer
         self.adder.add(force_push=True)
 
     @lru_cache()
-    def get_count(self, filters=None) -> int:
+    def get_count(self, filters: Filter = None) -> int:
         with OpenConnection(self.db_file) as db:
             filter_statement = self._get_filters(filters)
             c = db.execute(GET_COUNT.format(filter_statement=filter_statement)).fetchall()[0][0]
 
         return c
 
-    def get_list(self, filters=None, limit=None, offset=None):
+    def get_list(self, filters: Filter = None, limit: int = None, offset: int = None) -> List[int]:
         if filters and 'album' in filters:
             logger.debug('Songs should be sorted by track number')
 
@@ -214,7 +216,7 @@ class Database:
         logger.debug('Retrieved following playlist: {}'.format(p))
         return p
 
-    def get_buttons_by_id(self, ids, limit=None, play_func=None):
+    def get_buttons_by_id(self, play_func: Callable, ids: Iterable[int], limit: int = None) -> List[SongButton]:
         get_types = ('filepath', 'title')
 
         limit_clause = '' if limit is None else 'LIMIT %s' % limit
@@ -243,7 +245,7 @@ class Database:
                            play_song=play_func) for ID in ids]
 
     @staticmethod
-    def _get_filters(filters: typing.Mapping[str, typing.List[str]]) -> str:
+    def _get_filters(filters: Dict[str, List[str]]) -> str:
         # {'artist': ['a'], 'album':['b','c']}
         filter_str = ''
         if filters:
@@ -255,6 +257,6 @@ class Database:
         logger.debug('Filter generated: {}'.format(filter_str))
         return filter_str
 
-    def insert(self, query: str) -> None:
+    def run(self, query: str) -> None:
         with OpenConnection(self.db_file) as db:
             db.execute(query)

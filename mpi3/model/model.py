@@ -6,7 +6,7 @@ import random
 from collections import namedtuple, deque
 from itertools import cycle
 from subprocess import call
-from typing import Optional
+from typing import Optional, Dict, Callable
 
 from mpi3.model.db import Database
 from mpi3.model.navigation import Menu, Title
@@ -14,12 +14,13 @@ from mpi3.model.menu_items import SongButton
 from mpi3.model.constants import (
     DIRECTION as DIR
 )
+from mpi3.model.types import Filter
 
 logger = logging.getLogger(__name__)
 
 
 class PlaybackStates:
-    def __init__(self):
+    def __init__(self) -> None:
         _state_list = ['NORMAL', 'SHUFFLE', 'LOOP', 'REPEAT']
         _states = namedtuple('PLAYBACK_STATES', _state_list)
         self._mapping = {'NORMAL': ' ',
@@ -35,9 +36,6 @@ class PlaybackStates:
 
     def __str__(self) -> str:
         return self._mapping[self.state]
-
-    # def __repr__(self):
-    #     return self.state
 
 
 class SongBuffer:
@@ -60,7 +58,7 @@ class Volume:
     # {10} 20 30 40 50
     #  60  70 80 90 100
 
-    def __init__(self, config):
+    def __init__(self, config: Dict):
         logger.debug('Initializing volume object')
 
         self.muted = False
@@ -98,10 +96,10 @@ class Volume:
         self._old_vol_ptr = None
 
     @property
-    def current_volume(self):
+    def current_volume(self) -> int:
         return self._array[self._current_vol_ptr]
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.muted:
             return 'XX'
         elif self.current_volume == 100:
@@ -111,7 +109,7 @@ class Volume:
         else:
             return '{:02.0f}'.format(self.current_volume)
 
-    def _change_val(self, amt):
+    def _change_val(self, amt: int) -> int:
         if not 0 <= self._current_vol_ptr + amt <= len(self._array):
             logger.debug('Cannot go out of bounds for volume change, not doing anything')
         else:
@@ -120,16 +118,15 @@ class Volume:
 
         return self.current_volume
 
-    def _set_volume(self):
+    def _set_volume(self) -> None:
         call(['amixer', 'sset', 'PCM', '{}%'.format(self.current_volume)])
 
     @property
-    def increase(self):
+    def increase(self) -> int:
         return self._change_val(1)
 
     @property
-    def decrease(self):
-        # TODO: Mute vs 0%?  How's the noise?
+    def decrease(self) -> int:
         return self._change_val(-1)
 
     def mute(self) -> None:
@@ -163,7 +160,7 @@ class Volume:
 
 
 class SongList:
-    def __init__(self, db, play_song, page_size, filters=None):
+    def __init__(self, db: Database, play_song: Callable, page_size: int, filters: Filter = None) -> None:
         self.db = db
         self.filters = filters or dict()
         self._cnt = self.db.get_count()
@@ -177,23 +174,23 @@ class SongList:
 
         self.refresh_list()
 
-    def __iter__(self):
+    def __iter__(self) -> SongButton:
         yield from self.song_list
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.song_list)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> SongButton:
         return self.song_list[item]
 
-    def refresh_list(self):
+    def refresh_list(self) -> None:
         id_list = self.db.get_list(filters=self.filters,
                                    limit=self.page_size,
                                    offset=self.page * self.page_size)
         self.song_list = self.db.get_buttons_by_id(ids=id_list, limit=self.page_size, play_func=self.play_song)
 
     @property
-    def selected_id(self):
+    def selected_id(self) -> SongButton:
         start = self.page * self.page_size
         end = self.page_size + (self.page * self.page_size)
         if not (start <= self.song_counter <= end):
@@ -204,7 +201,7 @@ class SongList:
 
         return self.song_list[self.song_counter - start]
 
-    def get_next_id(self, s):
+    def get_next_id(self, s) -> Optional[SongButton]:
         if s.state in ('NORMAL', 'LOOP'):
             # Go to the next song in the list
             if self.song_counter < self._cnt:
@@ -227,7 +224,7 @@ class SongList:
             # randint is inclusive, we want exclusive
             new = random.randint(0, self._cnt - 1)
 
-            while len(self._cnt) > 1 and old == new:
+            while self._cnt > 1 and old == new:
                 # Make sure that we're getting a new song
                 # ID if there is a new one to get
                 # Worst case O(inf), expected case O(1)
@@ -237,7 +234,7 @@ class SongList:
         self.song_buffer.add(self.song_counter)
         return self.selected_id
 
-    def get_prev_id(self, s):
+    def get_prev_id(self, s) -> Optional[SongButton]:
         if s.state == 'NORMAL':
             if self.song_counter > 0:
                 self.song_counter -= 1
@@ -250,11 +247,9 @@ class SongList:
                 self.song_counter %= self._cnt
 
         elif s.state == 'REPEAT':
-            return self.song_counter
+            return self.selected_id
 
         elif s.state == 'SHUFFLE':
-            # Random is random :)
-            # TODO: Change to random song buffer
             self.song_buffer.back()
             self.song_counter = self.song_buffer.song_counter
 
@@ -280,10 +275,10 @@ class Model:
         # self.playlist.song_counter = self.menu.viewlist.song_counter
 
     @property
-    def has_songs_in_playlist(self):
+    def has_songs_in_playlist(self) -> bool:
         return self.playlist.song_counter < len(self.playlist)
 
-    def next_playback_state(self):
+    def next_playback_state(self) -> None:
         logger.debug('Playback state was: {}...'.format(self.playback_state))
         self.playback_state.next()
         logger.debug('... and is now {}'.format(self.playback_state))
