@@ -18,8 +18,7 @@ python_ver = run(['python3', '--version'],
 
 text = PapirusTextPos(rotation=90)
 
-# I want my MTV / f-strings
-text.AddText('{linux_ver}\n\n{python_ver}\nPapirus:\n{papirus_ver}\n\nMPi3:\n{mpi3_ver}'.format(
-        **locals()), size=15)
+text.AddText(f'{linux_ver}\n\n{python_ver}\nPapirus:\n{papirus_ver}\n\nMPi3:\n{mpi3_ver}', size=15)
 
 sleep(3)
+

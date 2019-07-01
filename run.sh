@@ -2,7 +2,6 @@
 
 rm .docker-communication
 touch .docker-communication
-docker pull byarmis/mpi3:latest # change tag?
 docker run \
     --privileged=true \
     -v ${pwd}/.docker-communication:/docker-communication \
