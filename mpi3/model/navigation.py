@@ -116,9 +116,12 @@ class SettingsMenu(BaseMenu):
         self.pages = []
         page = []
         for item in items:
+            script, quit = list(items.values())
+
             page.append(ShellButton(text=list(item.keys())[0],
                                     directory=config['menu']['shell_scripts'],
-                                    shell_script=list(item.values())[0],
+                                    shell_script=script,
+                                    quit=quit,
                                     env_vars=config['env_vars']))
 
             if len(page) == config['computed']['page_size']:

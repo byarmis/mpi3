@@ -29,7 +29,7 @@ class Button:
 
 
 class ShellButton(Button):
-    def __init__(self, text, directory, shell_script, env_vars):
+    def __init__(self, text, directory, shell_script, quit, env_vars):
         if not directory.endswith('/'):
             directory += '/'
         shell_script = os.path.expanduser(directory + shell_script)
@@ -38,6 +38,10 @@ class ShellButton(Button):
             subprocess.Popen(['sudo --preserve-env ' + shell_script],
                              shell=True,
                              env={**os.environ, **env_vars}).wait()
+            if quit:
+                import sys
+                sys.exit(0)
+
             return False
 
         super(ShellButton, self).__init__(text=text, on_click=func)

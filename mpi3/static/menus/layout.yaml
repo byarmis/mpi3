@@ -19,9 +19,19 @@ home:
       type: menu
 
       items:
-        - About: versions.py
-        - Audio Test: audio_test.sh
-        - Shutdown: shutdown.sh
-        - Reboot: reboot.sh
-        - Update: update.sh
+        - About: 
+              script: versions.py
+              quit: False
+        - Audio Test: 
+              script: audio_test.sh
+              quit: False
+        - Shutdown: 
+              script: shutdown.sh
+              quit: True
+        - Reboot: 
+              script: reboot.sh
+              quit: True
+        - Update: 
+              script: update.sh
+              quit: True
 
