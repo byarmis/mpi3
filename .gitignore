@@ -60,4 +60,4 @@ venv.bak/
 
 *.sqlite
 *.mp3
-docker-communication
+.docker-communication
