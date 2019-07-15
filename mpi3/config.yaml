@@ -1,5 +1,5 @@
 font:
-  file: ~/mpi3/mpi3/static/font/UbuntuMono-R.ttf
+  file: /mpi3/mpi3/static/font/UbuntuMono-R.ttf
   size: 15
   title_size: 13
 screen_size:
@@ -8,8 +8,8 @@ screen_size:
 page_size: 13
 music:
   directory:
-    - ~/mpi3/sound_files/
-  library: ~/mpi3/library.sqlite
+    - /Music/
+  library: /mpi3/library.sqlite
   buffer_load_size: 100
   bad_tracks:
 colors:
@@ -27,9 +27,6 @@ volume:
   stepsize_high: 10
   low_max: 10
 menu:
-  file: ~/mpi3/mpi3/static/menus/layout.yaml
-  shell_scripts: ~/mpi3/mpi3/static/shell_scripts/
+  file: /mpi3/mpi3/static/menus/layout.yaml
+  shell_scripts: /mpi3/mpi3/static/shell_scripts/
 heartbeat_refresh: 30
-env_vars:
-  HOME_DIR_mpi3: ~/mpi3/
-

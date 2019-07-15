@@ -5,8 +5,13 @@ import argparse
 import logging
 import os
 
-
 logger = logging.getLogger(__name__)
+
+
+class PlayerFinished(Exception):
+    def __init__(self):
+        super().__init__('Player Finished')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A Raspberry Pi-based MP3 player',
@@ -35,10 +40,10 @@ if __name__ == '__main__':
     parser.add_argument('--log-file', '-lf',
                         dest='log_file',
                         type=str,
-                        default='~/mpi3/logs/mpi3.log',
+                        default='/var/log/mpi3.log',
                         help='''The file to log to, if any.  
                                 If "False" (case-insensitive), will log to stdout instead.  
-                                Defaults to ~/mpi3/logs/mpi3.log''')
+                                Defaults to /var/log/mpi3.log''')
 
     parser.add_argument('--log-file-count', '-lfc',
                         dest='log_file_count',
@@ -85,10 +90,11 @@ if __name__ == '__main__':
         logger.info('Initializing player')
 
         from mpi3.controller.player import MPi3Player
+
         p = MPi3Player(args=args)
         logger.info('Running player')
         p.run()
-        logger.critical('Running player-- COMPLETE')
+        raise PlayerFinished
 
     except BaseException as e:
         if str(e):
