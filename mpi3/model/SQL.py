@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-CREATE_LIBRARY = '''
+create_library = '''
 CREATE TABLE library (
       id             INTEGER PRIMARY KEY AUTOINCREMENT
     , filepath       TEXT UNIQUE NOT NULL
@@ -12,20 +12,78 @@ CREATE TABLE library (
     , artist         TEXT
     , track_number   INTEGER
     , total_tracks   INTEGER
-);
-'''
+)
+;'''
+
+create_view_list = '''
+CREATE TABLE viewlist (
+      id  INTEGER PRIMARY KEY 
+    , txt TEXT
+)
+;'''
+
+create_play_list = '''
+CREATE TABLE playlist (
+    id INTEGER PRIMARY KEY
+)
+;'''
+
+CREATE_STATEMENTS = [
+    create_library
+    , create_view_list
+    , create_play_list
+]
 
 INSERT_SONGS = '''
 INSERT OR IGNORE INTO library 
   (filepath, length, title, sortable_title, album, artist, track_number, total_tracks) 
-VALUES (?,?,?,?,?,?,?,?);
-'''
+VALUES (?,?,?,?,?,?,?,?)
+;'''
+
+GET_VIEW_LIST = '''
+SELECT 
+    id
+  , txt
+FROM 
+    viewlist
+{limit_clause}
+{offset_clause}
+;'''
+
+INSERT_VIEW_LIST = '''
+INSERT INTO viewlist (id, txt)
+SELECT
+    id
+  , {col}
+FROM library
+{filter_clause}
+ORDER BY
+    {order_clause}
+;'''
+
+INSERT_PLAYLIST = '''
+INSERT INTO playlist (id)
+SELECT id
+FROM viewlist
+ORDER BY 
+    {order_clause}
+;'''
+
+TRUNCATE_VIEW_LIST = '''
+DELETE FROM viewlist
+;'''
+
+VIEW_LIST_TO_PLAYLIST = '''
+INSERT INTO playlist (id)
+SELECT id
+FROM viewlist
+{offset_clause}
+{limit_clause}
+;'''
 
 GET_PLAYLIST = '''
 SELECT id 
-FROM library
-{filter_statement} 
-ORDER BY {order_by}
+FROM playlist
 {limit_clause}
 {offset_clause}
 ;'''
@@ -39,41 +97,6 @@ WHERE id IN ({param_count})
 
 GET_COUNT = '''
 SELECT COUNT(*)
-FROM library
+FROM {table}
 {filter_statement}
 ;'''
-
-CREATE_ALBUMS = '''
-CREATE TABLE albums (
-      id    INTEGER PRIMARY KEY AUTOINCREMENT
-    , album TEXT
-);'''
-
-INSERT_ALBUMS = '''
-INSERT INTO albums (album)
-SELECT album 
-FROM library
-WHERE 
-    album IS NOT NULL
-    AND album != ''
-GROUP BY album
-ORDER BY album
-;'''
-
-CREATE_ARTISTS = '''
-CREATE TABLE artists (
-      id     INTEGER PRIMARY KEY AUTOINCREMENT
-    , artist TEXT
-);'''
-
-INSERT_ARTISTS = '''
-INSERT INTO artists (artist)
-SELECT artist
-FROM library
-WHERE 
-    artist IS NOT NULL
-    AND artist != ''
-GROUP BY artist
-ORDER BY artist
-;'''
-

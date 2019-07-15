@@ -6,21 +6,17 @@ import os
 import re
 import sqlite3
 import string
-from typing import Tuple, Iterable, List, Dict, Callable
+from typing import Tuple, Iterable, List, Dict, Callable, Set
 from functools import lru_cache
 
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 
 from mpi3.model.SQL import (
-    CREATE_ALBUMS,
-    CREATE_ARTISTS,
-    CREATE_LIBRARY,
+    CREATE_STATEMENTS,
     GET_BY_ID,
     GET_COUNT,
     GET_PLAYLIST,
-    INSERT_ALBUMS,
-    INSERT_ARTISTS,
     INSERT_SONGS,
 )
 from mpi3.model.menu_items import SongButton
@@ -30,11 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class NoSong(Exception):
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
+    def __init__(self, msg: str):
+        super().__init__(msg)
 
 
 class OpenConnection:
@@ -74,10 +67,9 @@ class BatchAdder:
                            'but the max is 500'.format(self.buffer_size))
             self.buffer_size = 500
 
-    def add(self, item: str = None, force_push: bool = False) -> None:
-        if item is not None:
-            tags = self._extract_tags(item)
-            self._buffer.append(tags)
+    def add(self, item: str, force_push: bool = False) -> None:
+        tags = self._extract_tags(item)
+        self._buffer.append(tags)
 
         if len(self._buffer) >= self.buffer_size or force_push:
             self._add_buffer()
@@ -137,6 +129,64 @@ class BatchAdder:
         logger.debug('\t... complete')
 
 
+class Statement(str):
+    """
+    A Statement is a string that can be built up progressively and interacted with like an object.
+
+    >>> s = Statement('SELECT * FROM {table}')
+    >>> str(s)
+    ValueError
+
+    >>> s.table = 'library'
+    >>> str(s)
+    'SELECT * FROM library'
+
+    A Statement also accept a dictionary in the constructor to pre-populate attributes
+    >>> s = Statement('SELECT * FROM {table} WHERE {where_clause}', {'table':'library'})
+    >>> str(s)
+    ValueError
+
+    >>> s.where_clause = '1 = 1'
+    >>> str(s)
+    'SELECT * FROM library WHERE 1 = 1'
+    """
+
+    def __new__(cls, a, *args, **kw):
+        return str.__new__(cls, a)
+
+    regex = r'.*{(.*)}.*'
+
+    def __init__(self, sql_statement: str, requirements: Dict[str, str] = None) -> None:
+        super().__init__()
+        self.sql = sql_statement
+        self.required = self._process_required(self.sql)
+
+        self._expected = {'sql', 'required'}
+
+        if requirements is not None:
+            for requirement, value in requirements.items():
+                setattr(self, requirement, value)
+
+    def __str__(self) -> str:
+        missing_requirements = self.required - set(self.__dict__.keys())
+        if missing_requirements:
+            raise ValueError(f'Required statement(s) not defined: {",".join(missing_requirements)}')
+
+        return self.sql.format(**self.__dict__)
+
+    def __repr__(self) -> str:
+        kwargs = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k not in self._expected}
+        return f'Statement({self.sql}, {kwargs})'
+
+    def _process_required(self, sql: str) -> Set[str]:
+        match = re.findall(self.regex, sql, flags=re.MULTILINE)
+
+        if match is None:
+            return set()
+        else:
+            return set(match)
+
+
 class Database:
     def __init__(self, config: Dict) -> None:
         logger.info('Initializing Database')
@@ -146,8 +196,6 @@ class Database:
 
         self.create_db()
         self.scan_libraries()
-        self.run(INSERT_ALBUMS)
-        self.run(INSERT_ARTISTS)
 
     def create_db(self) -> None:
         if os.path.isfile(self.db_file):
@@ -156,10 +204,9 @@ class Database:
         else:
             logger.info('Library file ({}) does not exist and will be created'.format(self.db_file))
 
-        with OpenConnection(self.db_file) as db:
-            db.execute(CREATE_LIBRARY)
-            db.execute(CREATE_ALBUMS)
-            db.execute(CREATE_ARTISTS)
+        for statement in CREATE_STATEMENTS:
+            with OpenConnection(self.db_file) as db:
+                db.execute(statement)
 
     def scan_libraries(self) -> None:
         logger.info('Scanning following directory(s):{}'.format('\n\t'.join(self.dirs)))
@@ -238,7 +285,7 @@ class Database:
                     res[get_type] = id_to_str
 
                 except IndexError:
-                    raise NoSong('No songs found for {} = [{}]'.format(get_type, ','.join(ids)))
+                    raise NoSong('No songs found for {} = [{}]'.format(get_type, ','.join([str(i) for i in ids])))
 
         return [SongButton(song_title=res['title'][ID],
                            song_path=res['filepath'][ID],
@@ -257,6 +304,6 @@ class Database:
         logger.debug('Filter generated: {}'.format(filter_str))
         return filter_str
 
-    def run(self, query: str) -> None:
+    def run(self, query: Statement) -> None:
         with OpenConnection(self.db_file) as db:
             db.execute(query)
