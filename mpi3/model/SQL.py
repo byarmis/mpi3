@@ -16,22 +16,22 @@ CREATE TABLE library (
 ;'''
 
 create_view_list = '''
-CREATE TABLE viewlist (
+CREATE TABLE view_list (
       id  INTEGER PRIMARY KEY 
     , txt TEXT
 )
 ;'''
 
 create_play_list = '''
-CREATE TABLE playlist (
+CREATE TABLE play_list (
     id INTEGER PRIMARY KEY
 )
 ;'''
 
 CREATE_STATEMENTS = [
     ('library', create_library)
-    , ('viewlist', create_view_list)
-    , ('playlist', create_play_list)
+    , ('view_list', create_view_list)
+    , ('play_list', create_play_list)
 ]
 
 INSERT_SONGS = '''
@@ -45,13 +45,13 @@ SELECT
     id
   , txt
 FROM 
-    viewlist
+    view_list
 {limit_clause}
 {offset_clause}
 ;'''
 
 INSERT_VIEW_LIST = '''
-INSERT INTO viewlist (id, txt)
+INSERT INTO view_list (id, txt)
 SELECT
     id
   , {col}
@@ -61,10 +61,10 @@ ORDER BY
     {order_clause}
 ;'''
 
-INSERT_PLAYLIST = '''
-INSERT INTO playlist (id)
+INSERT_PLAY_LIST = '''
+INSERT INTO play_list (id)
 SELECT id
-FROM viewlist
+FROM view_list
 ORDER BY 
     {order_clause}
 ;'''
@@ -73,17 +73,17 @@ TRUNCATE_TABLE = '''
 DELETE FROM {table}
 ;'''
 
-VIEW_LIST_TO_PLAYLIST = '''
+VIEW_LIST_TO_PLAY_LIST = '''
 INSERT INTO playlist (id)
 SELECT id
-FROM viewlist
+FROM view_list
 {offset_clause}
 {limit_clause}
 ;'''
 
-GET_PLAYLIST = '''
+GET_PLAY_LIST = '''
 SELECT id 
-FROM playlist
+FROM play_list
 {limit_clause}
 {offset_clause}
 ;'''

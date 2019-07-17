@@ -29,7 +29,7 @@ class Renderer:
         self.rendering = False
 
     @contextmanager
-    def render_lock(self):
+    def render_lock(self) -> None:
         self.rendering = True
         yield
         self.rendering = False

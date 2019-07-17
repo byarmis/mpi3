@@ -145,7 +145,7 @@ class Volume:
 
 
 class PlayList:
-    TABLE_NAME = 'playlist'
+    TABLE_NAME = 'play_list'
 
     def __init__(self, db: Database):
         self.song_counter = 0
@@ -160,7 +160,7 @@ class PlayList:
 
 
 class ViewList:
-    TABLE_NAME = 'viewlist'
+    TABLE_NAME = 'view_list'
 
     def __init__(self, db: Database, page_size: int, filters: Filter = None):
         self.db = db
