@@ -4,10 +4,11 @@
 from abc import ABCMeta, abstractmethod
 from datetime import datetime as dt
 import logging
-from typing import List, Tuple, Iterable, Any
+from typing import Tuple, Iterable, Any
 
 from mpi3.model.menu_items import Button, MenuButton, SongButton, ShellButton
 from mpi3.model.constants import CURSOR_DIR
+from mpi3.view.view import HowUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class SongMenu(BaseMenu):
         self.INITIAL_CURSOR_VAL = 0
         self.cursor_val = self.INITIAL_CURSOR_VAL  # TODO: Change to 1 when multimenus are a thing
 
-    def _cursor_move(self, direction):
+    def _cursor_move(self, direction) -> HowUpdate:
         self.song_list.song_counter += direction
 
         if 0 <= self.cursor_val + direction < len(self.song_list):
@@ -76,7 +77,7 @@ class SongMenu(BaseMenu):
             self.cursor_val += direction
 
             # Don't full redraw
-            return True
+            return HowUpdate(partial=True)
         else:
             logger.debug('Moving the cursor and changing pages')
 
@@ -91,19 +92,20 @@ class SongMenu(BaseMenu):
             self.song_list.refresh_list()
 
             self.strings = [str(i) for i in self.song_list]
-            # Full redraw
-            return False
 
-    def cursor_down(self) -> bool:
+            # Full redraw
+            return HowUpdate(complete=True)
+
+    def cursor_down(self) -> HowUpdate:
         return self._cursor_move(CURSOR_DIR.DOWN)
 
-    def cursor_up(self) -> bool:
+    def cursor_up(self) -> HowUpdate:
         return self._cursor_move(CURSOR_DIR.UP)
 
     def items(self) -> Tuple[str]:
         return tuple(str(i) for i in self.song_list)
 
-    def on_click(self) -> bool:
+    def on_click(self) -> HowUpdate:
         return self.song_list[self.cursor_val].on_click()
 
 
@@ -128,11 +130,11 @@ class SettingsMenu(BaseMenu):
                 self.pages.append(page)
                 page = []
 
-    def on_click(self) -> bool:
+    def on_click(self) -> HowUpdate:
         _ = self.page[self.cursor_val].on_click()
-        return False
+        return HowUpdate(complete=True)
 
-    def cursor_down(self) -> bool:
+    def cursor_down(self) -> HowUpdate:
         if self.cursor_val == len(self.page) - 1:
             self.cursor_val = 0
 
@@ -140,20 +142,20 @@ class SettingsMenu(BaseMenu):
             self.page_counter %= len(self.pages)
 
             # Full redraw
-            return False
+            return HowUpdate(complete=True)
 
         else:
             self.cursor_val += 1
-            return True
+            return HowUpdate(partial=True)
 
-    def cursor_up(self) -> bool:
+    def cursor_up(self) -> HowUpdate:
         if self.cursor_val == 0:
             self.page_counter = len(self.pages) - 1
             self.cursor_val = len(self.page) - 1
 
         else:
             self.cursor_val -= 1
-        return True
+        return HowUpdate(partial=True)
 
     def items(self) -> Tuple[str]:
         return tuple(str(b) for b in self.page)
@@ -193,20 +195,20 @@ class Menu:
         self.db = db
         self.song_list = song_list
         self._layout = self.config['menu']['layout']['home']
-        self._menu_stack = Stack([self.generate_home()])
+        self.menu_stack = Stack([self.generate_home()])
 
     @property
     def items(self):
-        return self._menu_stack.peek().items()
+        return self.menu_stack.peek().items()
 
     def cursor_down(self):
-        return self._menu_stack.peek().cursor_down()
+        return self.menu_stack.peek().cursor_down()
 
     def cursor_up(self):
-        return self._menu_stack.peek().cursor_up()
+        return self.menu_stack.peek().cursor_up()
 
     def back(self):
-        self._menu_stack.pop()
+        _ = self.menu_stack.pop()
         return True
 
     def generate_home(self):
@@ -235,41 +237,39 @@ class Menu:
         #
         #     return p
 
-    def on_click(self):
-        if self._menu_stack.peek().cursor_val > 0 or len(self._menu_stack) == 1:
+    def on_click(self) -> HowUpdate:
+        if self.menu_stack.peek().cursor_val > 0 or len(self.menu_stack) == 1:
             # May change the screen or may have side-effects (change the current songlist / playlist)
-            oc = self._menu_stack.peek().on_click()
+            oc = self.menu_stack.peek().on_click()
             if isinstance(oc, BaseMenu):
                 # Clicking on the button returned a new menu
                 # Catch it and put it on the stack
-                self._menu_stack.add(oc)
-                return False
+                self.menu_stack.add(oc)
+                return HowUpdate(complete=True)
 
             else:
                 return oc
         else:
             logger.debug('Going back a menu')
             # They clicked the back button
-            self._menu_stack.pop()
+            self.menu_stack.pop()
 
             # Always full re-render
-            return False
+            return HowUpdate(complete=True)
 
 
 class Title:
-    def __init__(self, state, vol):
+    def __init__(self, state, vol) -> None:
         self.state = state
         self.vol = vol
 
-    def __str__(self):
-        return '{state}   {time}  {vol}'.format(state=self.state,
-                                                vol=self.vol,
-                                                time=self.time)
+    def __str__(self) -> str:
+        return f'{self.state}   {self.time}  {self.vol}'
 
-    def __repr__(self):
-        return 'TITLE'
+    def __repr__(self) -> str:
+        return f'TITLE(state={self.state}, vol={self.vol})'
 
     @property
-    def time(self):
+    def time(self) -> str:
         # No idea how reliable this is
         return dt.now().strftime('%I:%M')
