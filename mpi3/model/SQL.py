@@ -29,9 +29,9 @@ CREATE TABLE playlist (
 ;'''
 
 CREATE_STATEMENTS = [
-    create_library
-    , create_view_list
-    , create_play_list
+    ('library', create_library)
+    , ('viewlist', create_view_list)
+    , ('playlist', create_play_list)
 ]
 
 INSERT_SONGS = '''
@@ -69,8 +69,8 @@ ORDER BY
     {order_clause}
 ;'''
 
-TRUNCATE_VIEW_LIST = '''
-DELETE FROM viewlist
+TRUNCATE_TABLE = '''
+DELETE FROM {table}
 ;'''
 
 VIEW_LIST_TO_PLAYLIST = '''
