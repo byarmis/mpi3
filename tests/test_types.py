@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from mpi3.types import Statement
+from mpi3.model.types import Statement
 
 SIMPLE_SQL = '''
 SELECT *
