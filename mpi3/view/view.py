@@ -4,12 +4,34 @@
 import os
 import logging
 from contextlib import contextmanager
-
 from PIL import Image, ImageDraw, ImageFont
 
 from papirus import Papirus
 
+from mpi3 import xor
+
 logger = logging.getLogger(__name__)
+
+
+class HowUpdate:
+    def __init__(self, partial: bool = None, complete: bool = None):
+        if not (partial | xor | complete):
+            raise ValueError('Either partial XOR complete must be True')
+
+        self._partial = partial
+        self._complete = complete
+
+    @property
+    def partial(self) -> bool:
+        if self._partial is not None:
+            return self._partial
+        return not self._complete
+
+    @property
+    def complete(self) -> bool:
+        if self._complete is not None:
+            return self._complete
+        return not self._partial
 
 
 class Renderer:
@@ -43,7 +65,7 @@ class Renderer:
         self._draw.text((0, (i * self.font.size) + self.tfont.size), '>',
                         font=self.font, fill=self.BLACK)
 
-    def render(self, title, items, cursor_val, partial=False) -> None:
+    def render(self, title, items, cursor_val, how_update: HowUpdate) -> None:
         if self.rendering:
             return
 
@@ -63,14 +85,14 @@ class Renderer:
                 offset += self.font.size
 
             self.papirus.display(self._image)
-            self.update(partial=partial)
+            self.update(how_update)
 
     def blank(self) -> None:
         logger.debug('Blanking')
         self._draw.rectangle((0, 0) + self.size, fill=self.WHITE, outline=self.WHITE)
 
-    def update(self, partial: bool) -> None:
-        if partial:
+    def update(self, how_update: HowUpdate) -> None:
+        if how_update.partial:
             logger.debug('Updating (partially)')
             self.papirus.partial_update()
         else:
