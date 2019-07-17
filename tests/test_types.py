@@ -25,7 +25,7 @@ class TestStatement(unittest.TestCase):
 
     def test_raises_exception(self):
         s = Statement(SQL)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             _ = str(s)
 
     def test_inheritance(self):
@@ -46,7 +46,7 @@ class TestStatement(unittest.TestCase):
 
     def test_prepopulate_attributes_raises_exception(self):
         s = Statement(SQL, {'table': TABLE})
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             _ = str(s)
 
     def test_prepopulate_attributes_set_attributes(self):
@@ -59,14 +59,14 @@ class TestStatement(unittest.TestCase):
 
     def test_docstring(self):
         s = Statement('SELECT * FROM {table}')
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             _ = str(s)
 
         s.table = 'library'
         self.assertEqual(str(s), 'SELECT * FROM library')
 
         s = Statement('SELECT * FROM {table} WHERE {where_clause}', {'table': 'library'})
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             _ = str(s)
 
         s.where_clause = '1 = 1'
