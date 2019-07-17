@@ -14,7 +14,7 @@ from mpi3.model.menu_items import SongButton
 from mpi3.model.constants import (
     DIRECTION as DIR
 )
-from mpi3.types import Filter
+from mpi3.model.types import Filter
 
 logger = logging.getLogger(__name__)
 

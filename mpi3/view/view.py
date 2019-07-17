@@ -8,30 +8,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 from papirus import Papirus
 
-from mpi3 import xor
+from mpi3.view.types import HowUpdate
 
 logger = logging.getLogger(__name__)
-
-
-class HowUpdate:
-    def __init__(self, partial: bool = None, complete: bool = None):
-        if not (partial | xor | complete):
-            raise ValueError('Either partial XOR complete must be True')
-
-        self._partial = partial
-        self._complete = complete
-
-    @property
-    def partial(self) -> bool:
-        if self._partial is not None:
-            return self._partial
-        return not self._complete
-
-    @property
-    def complete(self) -> bool:
-        if self._complete is not None:
-            return self._complete
-        return not self._partial
 
 
 class Renderer:

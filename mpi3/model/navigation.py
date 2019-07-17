@@ -8,7 +8,7 @@ from typing import Tuple, Iterable, Any
 
 from mpi3.model.menu_items import Button, MenuButton, SongButton, ShellButton
 from mpi3.model.constants import CURSOR_DIR
-from mpi3.view.view import HowUpdate
+from mpi3.view.types import HowUpdate
 
 logger = logging.getLogger(__name__)
 
