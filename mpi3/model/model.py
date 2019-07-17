@@ -3,7 +3,7 @@
 
 import logging
 import random
-from collections import namedtuple, deque
+from collections import namedtuple
 from itertools import cycle
 from subprocess import call
 from typing import Optional, Dict, Callable
@@ -14,7 +14,7 @@ from mpi3.model.menu_items import SongButton
 from mpi3.model.constants import (
     DIRECTION as DIR
 )
-from mpi3.model.types import Filter
+from mpi3.types import Filter
 
 logger = logging.getLogger(__name__)
 
@@ -38,27 +38,12 @@ class PlaybackStates:
         return self._mapping[self.state]
 
 
-class SongBuffer:
-    def __init__(self, limit: int) -> None:
-        self._deque = deque(maxlen=limit)
-
-    def add(self, song_counter: int) -> None:
-        self._deque.append(song_counter)
-
-    def back(self) -> None:
-        self._deque.pop()
-
-    @property
-    def song_counter(self) -> int:
-        return self._deque[-1]
-
-
 class Volume:
     #  0   2  4  6  8
     # {10} 20 30 40 50
     #  60  70 80 90 100
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict) -> None:
         logger.debug('Initializing volume object')
 
         self.muted = False
@@ -157,6 +142,31 @@ class Volume:
             ))
 
         self._set_volume()
+
+
+class PlayList:
+    TABLE_NAME = 'playlist'
+
+    def __init__(self, db: Database):
+        self.song_counter = 0
+
+        self.db = db
+        self.db.truncate(self.TABLE_NAME)
+
+    def __len__(self):
+        return self.db.get_count(self.TABLE_NAME)
+
+    pass
+
+
+class ViewList:
+    TABLE_NAME = 'viewlist'
+
+    def __init__(self, db: Database, page_size: int, filters: Filter = None):
+        self.db = db
+        self.db.truncate(self.TABLE_NAME)
+        self.page_size = page_size
+        self.viewlist_type = None
 
 
 class SongList:
@@ -262,8 +272,10 @@ class Model:
         self.volume = Volume(config['volume'])
 
         self.playback_state = PlaybackStates()
+        self.playlist = PlayList(db=self.database)
+        self.viewlist = ViewList(db=self.database, page_size=config['computed']['page_size'])
 
-        self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
+        # self.playlist = SongList(db=self.database, page_size=config['computed']['page_size'], play_song=play_song)
         self.menu = Menu(config=config, db=self.database, song_list=self.playlist)
         self.title = Title(state=self.playback_state, vol=self.volume)
 
@@ -273,10 +285,6 @@ class Model:
         # transferred over and the position saved (so if you start a playlist halfway through, it'll be fine)
         # self.playlist.filters = {k: v for k, v in self.menu.viewlist.filters.items()}
         # self.playlist.song_counter = self.menu.viewlist.song_counter
-
-    @property
-    def has_songs_in_playlist(self) -> bool:
-        return self.playlist.song_counter < len(self.playlist)
 
     def next_playback_state(self) -> None:
         logger.debug('Playback state was: {}...'.format(self.playback_state))
@@ -296,8 +304,8 @@ class Model:
 
     @property
     def cursor_val(self):
-        return self.menu._menu_stack.peek().cursor_val
+        return self.menu.menu_stack.peek().cursor_val
 
     @property
     def page(self):
-        return self.menu._menu_stack.peek()
+        return self.menu.menu_stack.peek()
