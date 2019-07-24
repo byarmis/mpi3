@@ -10,10 +10,10 @@ from setuptools import find_packages, setup, Command
 # Package meta-data.
 NAME = 'mpi3'
 DESCRIPTION = 'A Raspberry Pi-based MP3 player with an eInk display'
-URL = 'https://gitlab.com/byarmis/mpi3'
+URL = 'https://github.com/byarmis/mpi3'
 EMAIL = 'ben@yarm.is'
 AUTHOR = 'Ben Yarmis'
-REQUIRES_PYTHON = '>=3.5.0'
+REQUIRES_PYTHON = '>=3.7.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [

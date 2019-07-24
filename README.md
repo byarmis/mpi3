@@ -60,21 +60,20 @@ I originally wanted to use Dropbox to synchronize music folders, but Dropbox doe
 6. Boot up, SSH in, update, and install
     ```bash
       $ sudo apt update; sudo apt upgrade
-      $ sudo apt install rpi-update git mpg123 sqlite3 python3-dev libjpeg8-dev
+      $ sudo apt install rpi-update git docker.io
       $ sudo apt autoremove
       $ sudo rpi-update
     ```
 7. Run `sudo raspi-config` and change to auto-login to terminal on boot-up.
 Also, update your timezone and WiFi settings since we're here
-8. Install the [PaPiRus python package](https://github.com/PiSupply/PaPiRus) by running `curl -sSL https://pisupp.ly/papiruscode | sudo bash`
-9. Shutdown (`sudo poweroff`) and plug in the DAC using the OTG adapter
-10. Boot up and configure your default sound output to be the USB DAC.
+8. Shutdown (`sudo poweroff`) and plug in the DAC using the OTG adapter
+9. Boot up and configure your default sound output to be the USB DAC.
 I suggest [this](https://learn.adafruit.com/usb-audio-cards-with-a-raspberry-pi?view=all#raspbian-stretch-updating-alsa-options-7-1) method from Adafruit.
 Test to make sure that everything works by running `speaker-test -c 2` which will play pink noise over the left, followed by the right, channels.
-11. Disable the HDMI output per [this](https://www.jeffgeerling.com/blogs/jeff-geerling/raspberry-pi-zero-conserve-energy) page to save a couple milliamps.
-12. Clone this repo by running `git clone https://gitlab.com/byarmis/mpi3`.  Or actually, `pip install mpi3`?  Maybe?  TBD
-13. Make this start on boot up by editing the root crontab by running `sudo crontab -e -u root` and appending the line `TBD`
-14. Reboot (`sudo reboot`) and you should be good to go!
+10. Disable the HDMI output per [this](https://www.jeffgeerling.com/blogs/jeff-geerling/raspberry-pi-zero-conserve-energy) page to save a couple milliamps.
+11. Clone this repo by running `git clone --depth=1 https://github.com/byarmis/mpi3` and pull the latest Docker image while we have internet by running `TBD`.
+12. Make this start on boot up by editing the root crontab by running `sudo crontab -e -u root` and appending the line `TBD`
+13. Reboot (`sudo reboot`) and you should be good to go!
 
 ## Hardware
 
@@ -84,9 +83,9 @@ The PowerBoost comes with resistors that signal over the data lines an iPhone or
 These aren't neccessary and I worry about their effects on the data lines that will be connected later.
 There's also a really bright LED that indicates that the PowerBoost is on-- this is duplicating the function of the green LED already on the Raspberry Pi and is really bright.
 
-I suggest using the PowerBoost 500 since the Pi Zero W doesn't draw enough power to necessitate the 1000 version, but that's the one that I started development with.
-
 #### PowerBoost 1000
+#TODO: REMOVE THIS SECTION
+
 The components that can be removed are:
 
 * R9, R10, R11, and R12-- the resistors on the data lines

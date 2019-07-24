@@ -5,28 +5,28 @@ import logging
 import os
 import re
 import string
-from mutagen.easyid3 import EasyID3
-from mutagen.mp3 import MP3
 import sqlite3
 from typing import Iterable, List, Dict, Callable, Tuple
 from functools import lru_cache
 
-from mpi3.types import Statement
+from mutagen.easyid3 import EasyID3
+from mutagen.mp3 import MP3
+
+from mpi3.model.types import Statement, Filter
 from mpi3.model.SQL import (
     CREATE_STATEMENTS,
     GET_BY_ID,
     GET_COUNT,
-    GET_PLAYLIST,
+    GET_PLAY_LIST,
     TRUNCATE_TABLE,
 )
 from mpi3.model.menu_items import SongButton
-from mpi3.types import Filter
 
 logger = logging.getLogger(__name__)
 
 
 class NoSong(Exception):
-    def __init__(self, msg: str):
+    def __init__(self, msg: str) -> None:
         super().__init__(msg)
 
 
@@ -46,11 +46,22 @@ class OpenConnection:
         self.conn.close()
 
 
+class Executor:
+    def __init__(self, db_file: str) -> None:
+        self.db_file = db_file
+
+    def execute(self, query: Statement) -> None:
+        with OpenConnection(self.db_file) as db:
+            db.execute(query)
+
+
 class Database:
     def __init__(self, config: Dict) -> None:
         logger.info('Initializing Database')
         self.dirs = config['directory']
         self.db_file = os.path.expanduser(config['library'])
+
+        self.executor = Executor(self.db_file)
         self.adder = BatchAdder(config)
 
         self.TABLES = set()
@@ -65,8 +76,7 @@ class Database:
             logger.info('Library file ({}) does not exist and will be created'.format(self.db_file))
 
         for table, statement in CREATE_STATEMENTS:
-            with OpenConnection(self.db_file) as db:
-                db.execute(statement)
+            self.executor.execute(Statement(statement))
             self.TABLES.add(table)
 
     def scan_libraries(self) -> None:
@@ -88,15 +98,22 @@ class Database:
         # Push the remaining partial buffer
         self.adder.add(force_push=True)
 
-    @lru_cache()
     def get_count(self, table: str = 'library', filters: Filter = None) -> int:
-        with OpenConnection(self.db_file) as db:
-            filter_statement = self._get_filters(filters)
-            c = db.execute(GET_COUNT.format(table=table, filter_statement=filter_statement)).fetchall()[0][0]
+        filter_statement = self._get_filters(filters)
+        query = Statement(GET_COUNT, {'table': table, 'filter_statement': filter_statement})
 
-        return c
+        return self.executor.execute(query).fetchall()[0][0]
+
+    def get_play_list(self):
+        pass
+
+    def get_view_list(self):
+        pass
 
     def get_list(self, filters: Filter = None, limit: int = None, offset: int = None) -> List[int]:
+        # TODO: DEPRECATE THIS
+        # FUCK
+
         if filters and 'album' in filters:
             logger.debug('Songs should be sorted by track number')
 
@@ -111,6 +128,7 @@ class Database:
         limit_clause = '' if limit is None else 'LIMIT %s' % limit
         offset_clause = '' if offset is None else 'OFFSET %s' % offset
 
+        query = Statement(GET_PLAY_LIST, {'filter_statement': filter_statement, ''})
         with OpenConnection(self.db_file) as db:
             q = GET_PLAYLIST.format(filter_statement=filter_statement,
                                     order_by=order_by,

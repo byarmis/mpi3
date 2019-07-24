@@ -15,7 +15,7 @@ class PlayerFinished(Exception):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A Raspberry Pi-based MP3 player',
-                                     epilog='For bugs, questions, and discussion, see https://gitlab.com/byarmis/mpi3',
+                                     epilog='For bugs, questions, and discussion, see https://github.com/byarmis/mpi3',
                                      prog='mpi3')
 
     parser.add_argument('--config-file', '-c',

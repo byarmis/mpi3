@@ -3,7 +3,6 @@
 rm .docker-communication
 touch .docker-communication
 
-mkdir --parents /home/pi/Music
 mkdir --parents /var/log
 
 pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
