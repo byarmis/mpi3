@@ -31,15 +31,14 @@ class Statement(str):
 
     regex = r'.*{(.*)}.*'
 
-    def __init__(self, sql_statement: str, requirements: Dict[str, str] = None) -> None:
+    def __init__(self, sql_statement: str, **kwargs) -> None:
         super().__init__()
         self.sql = sql_statement
 
         self._expected = {'sql', }
 
-        if requirements is not None:
-            for requirement, value in requirements.items():
-                setattr(self, requirement, value)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def __str__(self) -> str:
         return self.sql.format(**self.__dict__)

@@ -41,17 +41,23 @@ class TestStatement(unittest.TestCase):
         self.assertIn('table', repr(s))
 
     def test_prepopulate_attributes(self):
-        s = Statement(SQL, {'table': TABLE})
+        s = Statement(SQL, table=TABLE)
         self.assertTrue(hasattr(s, 'table'))
 
     def test_prepopulate_attributes_raises_exception(self):
-        s = Statement(SQL, {'table': TABLE})
+        s = Statement(SQL, table=TABLE)
         with self.assertRaises(KeyError):
             _ = str(s)
 
     def test_prepopulate_attributes_set_attributes(self):
-        s = Statement(SQL, {'table': TABLE})
+        s = Statement(SQL, table=TABLE)
         s.where_clause = WHERE
+        ret = str(s)
+        self.assertEqual(ret, SQL.format(table=TABLE, where_clause=WHERE))
+        self.assertIn('table', repr(s))
+        self.assertIn('where_clause', repr(s))
+
+        s = Statement(SQL, table=TABLE, where_clause=WHERE)
         ret = str(s)
         self.assertEqual(ret, SQL.format(table=TABLE, where_clause=WHERE))
         self.assertIn('table', repr(s))
@@ -62,12 +68,12 @@ class TestStatement(unittest.TestCase):
         with self.assertRaises(KeyError):
             _ = str(s)
 
-        s.table = 'library'
-        self.assertEqual(str(s), 'SELECT * FROM library')
+        s.table = TABLE
+        self.assertEqual(str(s), 'SELECT * FROM {table}'.format(table=TABLE))
 
-        s = Statement('SELECT * FROM {table} WHERE {where_clause}', {'table': 'library'})
+        s = Statement('SELECT * FROM {table} WHERE {where_clause}', table=TABLE)
         with self.assertRaises(KeyError):
             _ = str(s)
 
-        s.where_clause = '1 = 1'
-        self.assertEqual(str(s), 'SELECT * FROM library WHERE 1 = 1')
+        s.where_clause = WHERE
+        self.assertEqual(str(s), 'SELECT * FROM {table} WHERE {where}'.format(table=TABLE, where=WHERE))
