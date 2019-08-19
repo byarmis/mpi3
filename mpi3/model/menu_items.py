@@ -5,6 +5,8 @@ import logging
 import os
 import subprocess
 
+from mpi3.view.types import HowUpdate
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,10 +41,9 @@ class ShellButton(Button):
                              shell=True,
                              env={**os.environ, **env_vars}).wait()
             if quit:
-                import sys
-                sys.exit(0)
+                raise SystemExit
 
-            return False
+            return HowUpdate(complete=True)
 
         super(ShellButton, self).__init__(text=text, on_click=func)
 

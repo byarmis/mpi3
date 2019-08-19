@@ -1,0 +1,40 @@
+[font]
+file       = "/mpi3/mpi3/static/font/UbuntuMono-R.ttf"
+size       = 15
+title_size = 13
+
+[screen]
+width  = 96
+height = 200
+
+[music]
+directory = [
+    "/Music/",
+]
+library          = "/mpi3/library.sqlite"
+buffer_load_size = 100
+
+[colors]
+white = 1
+black = 0
+
+[buttons]
+up     = 26
+down   = 19
+select = 20
+play   = 16
+volume = 21
+
+[volume]
+default       = 10
+stepsize_low  = 2
+stepsize_high = 10
+low_max       = 10
+
+[menu]
+file          = "/mpi3/mpi3/static/menus/layout.yaml"
+shell_scripts = "/mpi3/mpi3/static/shell_scripts/"
+
+heartbeat_refresh = 30
+page_size         = 13
+

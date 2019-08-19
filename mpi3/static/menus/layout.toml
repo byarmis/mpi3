@@ -1,0 +1,44 @@
+[[home]]
+name     = "Songs"
+type     = "song_list"
+get_type = "title"
+
+[[home]]
+name     = "Albums"
+type     = "song_list"
+get_type = "album"
+
+[[home]]
+name     = "Artists"
+type     = "song_list"
+get_type = "artist"
+
+[[home]]
+name     = "Settings"
+type     = "menu"
+
+    [[home.items]]
+    name   = "About"
+    script = "versions.py"
+    quit   = false
+
+    [[home.items]]
+    name   = "Audio Test"
+    script = "audio_test.sh"
+    quit   = false
+
+    [[home.items]]
+    name   = "Shutdown"
+    script = "shutdown.sh"
+    quit   = true
+
+    [[home.items]]
+    name   = "Reboot"
+    script = "reboot.sh"
+    quit   = true
+
+    [[home.items]]
+    name   = "Update"
+    script = "update.sh"
+    quit   = true
+

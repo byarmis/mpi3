@@ -86,8 +86,8 @@ class View:
         self.papirus = Papirus(rotation=90)
         self.papirus.clear()
 
-        self.screen_size = (config['screen_size']['width']
-                            , config['screen_size']['height'])
+        self.screen_size = (config['screen']['width']
+                            , config['screen']['height'])
 
         self._font_file = os.path.expanduser(self.config['font']['file'])
 

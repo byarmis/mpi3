@@ -209,7 +209,7 @@ class Menu:
 
     def back(self):
         _ = self.menu_stack.pop()
-        return True
+        return HowUpdate(complete=True)
 
     def generate_home(self):
         return SettingsMenu(config=self.config,

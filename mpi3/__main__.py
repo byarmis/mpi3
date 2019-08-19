@@ -22,7 +22,7 @@ if __name__ == '__main__':
                         dest='config_file',
                         type=str,
                         # TODO: Might need to change below
-                        default='./mpi3/config.yaml',
+                        default='./mpi3/config.toml',
                         help='File path for the config file to use')
 
     parser.add_argument('--log-level', '-ll',

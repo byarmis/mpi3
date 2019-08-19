@@ -56,12 +56,16 @@ class TestStatement(unittest.TestCase):
         self.assertEqual(ret, SQL.format(table=TABLE, where_clause=WHERE))
         self.assertIn('table', repr(s))
         self.assertIn('where_clause', repr(s))
+        self.assertIn(TABLE, repr(s))
+        self.assertIn(WHERE, repr(s))
 
         s = Statement(SQL, table=TABLE, where_clause=WHERE)
         ret = str(s)
         self.assertEqual(ret, SQL.format(table=TABLE, where_clause=WHERE))
         self.assertIn('table', repr(s))
         self.assertIn('where_clause', repr(s))
+        self.assertIn(TABLE, repr(s))
+        self.assertIn(WHERE, repr(s))
 
     def test_docstring(self):
         s = Statement('SELECT * FROM {table}')

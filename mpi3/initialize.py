@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import yaml
+import toml
 import logging
 import os
 
@@ -14,22 +14,19 @@ def get_config(config: str) -> dict:
     config_path = os.path.expanduser(config)
     logger.debug('Getting config {}'.format(config_path))
     with open(config_path) as f:
-        logger.debug('Loading yaml file')
-        c = yaml.load(f)
-        logger.debug('yaml file loaded')
+        logger.debug('Loading config file')
+        c = toml.load(f)
+        logger.debug('config file loaded')
 
     c['computed'] = {}
 
     menu_path = os.path.expanduser(c['menu']['file'])
     with open(menu_path) as f:
         logger.debug('Loading menu config')
-        c['menu']['layout'] = yaml.load(f)
-        logger.debug('yaml file loaded')
+        c['menu']['layout'] = toml.load(f)
+        logger.debug('config file loaded')
 
-    c['computed']['page_size'] = (c['screen_size']['height'] - c['font']['title_size']) // c['font']['size']
-
-    for k in c['env_vars']:
-        c['env_vars'][k] = os.path.expanduser(c['env_vars'][k])
+    c['computed']['page_size'] = (c['screen']['height'] - c['font']['title_size']) // c['font']['size']
 
     return c
 
