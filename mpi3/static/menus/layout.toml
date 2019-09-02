@@ -1,44 +1,65 @@
 [[home]]
+name  = "__home"
+type  = "menu"
+order = [
+    "songs",
+    "albums",
+    "artists",
+    "settings",
+]
+
+[home.songs]
 name     = "Songs"
 type     = "song_list"
 get_type = "title"
 
-[[home]]
+[home.albums]
 name     = "Albums"
 type     = "song_list"
 get_type = "album"
 
-[[home]]
+[home.artists]
 name     = "Artists"
 type     = "song_list"
 get_type = "artist"
 
-[[home]]
-name     = "Settings"
-type     = "menu"
+[home.settings]
+name  = "Settings"
+type  = "menu"
+order = [
+    "about",
+    "audio_test",
+    "shutdown",
+    "reboot",
+    "update",
+]
 
-    [[home.items]]
+    [home.settings.about]
     name   = "About"
+    type   = "script"
     script = "versions.py"
     quit   = false
 
-    [[home.items]]
+    [home.settings.audio_test]
     name   = "Audio Test"
+    type   = "script"
     script = "audio_test.sh"
     quit   = false
 
-    [[home.items]]
+    [home.setings.shutdown]
     name   = "Shutdown"
+    type   = "script"
     script = "shutdown.sh"
     quit   = true
 
-    [[home.items]]
+    [home.setings.reboot]
     name   = "Reboot"
+    type   = "script"
     script = "reboot.sh"
     quit   = true
 
-    [[home.items]]
+    [home.settings.update]
     name   = "Update"
+    type   = "script"
     script = "update.sh"
     quit   = true
-
