@@ -4,7 +4,7 @@
 from abc import ABCMeta, abstractmethod
 from datetime import datetime as dt
 import logging
-from typing import Tuple, Iterable, Any
+from typing import Tuple, Iterable, Any, Dict
 
 from mpi3.model.menu_items import Button, MenuButton, SongButton, ShellButton
 from mpi3.model.constants import CURSOR_DIR
@@ -62,14 +62,15 @@ class BaseMenu(metaclass=ABCMeta):
 class SongMenu(BaseMenu):
     # What's on screen at the moment
 
-    def __init__(self, page_size, song_list):
+    def __init__(self, page_size: int, song_list) -> None:
+        super().__init__()
         self.page = 0
         self.page_size = page_size
         self.song_list = song_list
         self.INITIAL_CURSOR_VAL = 0
         self.cursor_val = self.INITIAL_CURSOR_VAL  # TODO: Change to 1 when multimenus are a thing
 
-    def _cursor_move(self, direction) -> HowUpdate:
+    def _cursor_move(self, direction: CURSOR_DIR) -> HowUpdate:
         self.song_list.song_counter += direction
 
         if 0 <= self.cursor_val + direction < len(self.song_list):
@@ -188,7 +189,7 @@ class MenuMenu(BaseMenu):
 
 class Menu:
     # All menus
-    def __init__(self, config, db, song_list):
+    def __init__(self, config: Dict, db, song_list) -> None:
         self.config = config
         self.is_home = True
         self.page_size = self.config['computed']['page_size']
@@ -259,7 +260,7 @@ class Menu:
 
 
 class Title:
-    def __init__(self, state, vol) -> None:
+    def __init__(self, state: str, vol: str) -> None:
         self.state = state
         self.vol = vol
 

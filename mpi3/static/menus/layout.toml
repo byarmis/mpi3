@@ -8,58 +8,58 @@ order = [
     "settings",
 ]
 
-[home.songs]
-name     = "Songs"
-type     = "song_list"
-get_type = "title"
+    [home.songs]
+    name     = "Songs"
+    type     = "song_list"
+    get_type = "title"
 
-[home.albums]
-name     = "Albums"
-type     = "song_list"
-get_type = "album"
+    [home.albums]
+    name     = "Albums"
+    type     = "song_list"
+    get_type = "album"
 
-[home.artists]
-name     = "Artists"
-type     = "song_list"
-get_type = "artist"
+    [home.artists]
+    name     = "Artists"
+    type     = "song_list"
+    get_type = "artist"
 
-[home.settings]
-name  = "Settings"
-type  = "menu"
-order = [
-    "about",
-    "audio_test",
-    "shutdown",
-    "reboot",
-    "update",
-]
+    [home.settings]
+    name  = "Settings"
+    type  = "menu"
+    order = [
+        "about",
+        "audio_test",
+        "shutdown",
+        "reboot",
+        "update",
+    ]
 
-    [home.settings.about]
-    name   = "About"
-    type   = "script"
-    script = "versions.py"
-    quit   = false
+        [home.settings.about]
+        name   = "About"
+        type   = "script"
+        script = "versions.py"
+        quit   = false
 
-    [home.settings.audio_test]
-    name   = "Audio Test"
-    type   = "script"
-    script = "audio_test.sh"
-    quit   = false
+        [home.settings.audio_test]
+        name   = "Audio Test"
+        type   = "script"
+        script = "audio_test.sh"
+        quit   = false
 
-    [home.setings.shutdown]
-    name   = "Shutdown"
-    type   = "script"
-    script = "shutdown.sh"
-    quit   = true
+        [home.setings.shutdown]
+        name   = "Shutdown"
+        type   = "script"
+        script = "shutdown.sh"
+        quit   = true
 
-    [home.setings.reboot]
-    name   = "Reboot"
-    type   = "script"
-    script = "reboot.sh"
-    quit   = true
+        [home.setings.reboot]
+        name   = "Reboot"
+        type   = "script"
+        script = "reboot.sh"
+        quit   = true
 
-    [home.settings.update]
-    name   = "Update"
-    type   = "script"
-    script = "update.sh"
-    quit   = true
+        [home.settings.update]
+        name   = "Update"
+        type   = "script"
+        script = "update.sh"
+        quit   = true

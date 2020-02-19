@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from mpi3 import initialize
 from mpi3.model.model import Model
 from mpi3.view.view import View
+from mpi3.view.types import HowUpdate
 from mpi3.model.constants import (
     DIRECTION as DIR,
     BUTTON_MODE as MODE,
@@ -33,7 +34,7 @@ class NonBlockingStreamReader:
         self._s = stream
         self._q = Queue()
 
-        def _populate_queue(stream_provider, queue):
+        def _populate_queue(stream_provider, queue: Queue) -> None:
             """
             Collect lines from 'stream_provider' and put them in 'queue'.
             """
@@ -67,14 +68,14 @@ class MusicPlayer:
         self.stream_reader = NonBlockingStreamReader(self.process.stdout)
 
         self.last_state = None
-        self.last_poll = None
+        self.last_poll_time = None
 
     def _write(self, msg: str) -> None:
         self.process.stdin.write(str.encode(msg + '\n'))
         self.process.stdin.flush()
 
     def poll(self) -> None:
-        self.last_poll = dt.now()
+        self.last_poll_time = dt.now()
         self.last_state = self.stream_reader.readline() or self.last_state
 
     def play(self, song_path: str) -> None:
@@ -109,10 +110,10 @@ class MusicPlayer:
 
     @property
     def state(self) -> mpg_123_STATES:
-        if self.last_state is None:
+        if self.last_state is None or self.last_poll_time is None:
             self.poll()
 
-        if (dt.now() - self.last_poll).total_seconds() > 1:
+        if (dt.now() - self.last_poll_time).total_seconds() > 1:
             self.poll()
         return mpg_123_STATES.get(self.last_state)
 
@@ -137,7 +138,7 @@ class MPi3Player:
         logger.debug('Player initialization complete')
 
         # First render-- complete rerender
-        self.render(partial=False)
+        self.render(HowUpdate(complete=True))
         self.last_refresh = dt.now()
 
     @contextmanager
@@ -146,7 +147,7 @@ class MPi3Player:
         yield
         self.can_refresh = True
 
-    def change_song(self, direction):
+    def change_song(self, direction: DIR) -> None:
         logger.debug('Getting next song')
 
         # PEP-572 would be helpful here, I think? I am the walrus coo coo ca choo
@@ -159,7 +160,7 @@ class MPi3Player:
             logger.debug("There isn't a next song to play.  Stopping")
             self.player.stop()
 
-    def up(self, _):
+    def up(self, _) -> None:
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving up')
             redraw = self.model.menu.cursor_up()
@@ -169,13 +170,13 @@ class MPi3Player:
         elif self.button_mode == MODE.VOLUME:
             vol = self.model.volume.increase
             logger.debug('Volume increased to {}'.format(vol))
-            self.render(partial=True)
+            self.render(HowUpdate(partial=True))
 
         elif self.button_mode == MODE.PLAYBACK:
             logger.info('Playing next song')
             self.change_song(direction=DIR.FORWARD)
 
-    def down(self, _):
+    def down(self, _) -> None:
         if self.button_mode == MODE.NORMAL:
             logger.debug('Moving down')
             redraw = self.model.menu.cursor_down()
@@ -185,13 +186,13 @@ class MPi3Player:
             logger.debug('Decreasing volume')
             vol = self.model.volume.decrease
             logger.debug('Volume decreased to {}'.format(vol))
-            self.render(partial=True)
+            self.render(HowUpdate(partial=True))
 
         elif self.button_mode == MODE.PLAYBACK:
             logger.info('Playing previous song')
             self.change_song(direction=DIR.BACKWARD)
 
-    def sel(self, _):
+    def sel(self, _) -> None:
         logger.debug('SELECT')
 
         if self.button_mode == MODE.NORMAL:
@@ -212,9 +213,9 @@ class MPi3Player:
 
         # Have to rerender to update the volume and playback mode info
         # Never do a full redraw when just changing one of those two
-        self.render(partial=False)
+        self.render(HowUpdate(complete=True))
 
-    def play(self, _):
+    def play(self, _) -> None:
         logger.debug('PLAY')
 
         if self.button_mode == MODE.NORMAL:
@@ -233,9 +234,9 @@ class MPi3Player:
 
         # Have to rerender to update the volume and playback mode info
         # Never do a full redraw when just changing one of those two
-        self.render(partial=False)
+        self.render(HowUpdate(complete=True))
 
-    def vol(self, _):
+    def vol(self, _) -> None:
         logger.debug('VOL pressed')
         if self.button_mode == MODE.NORMAL:
             self.button_mode = MODE.VOLUME
@@ -250,9 +251,9 @@ class MPi3Player:
             # Setting the button mode back to normal
             self.button_mode = MODE.NORMAL
 
-        self.render(partial=False)
+        self.render(HowUpdate(complete=True))
 
-    def render(self, partial):
+    def render(self, partial: HowUpdate) -> None:
         self.view.render(title=self.model.title,
                          items=self.model.menu.items,
                          cursor_val=self.model.cursor_val,
@@ -272,5 +273,5 @@ class MPi3Player:
             if self.can_refresh and \
                     (dt.now() - self.last_refresh).total_seconds() >= self.config['heartbeat_refresh']:
                 logger.debug('Heartbeat re-render')
-                self.render(partial=True)
+                self.render(HowUpdate(partial=True))
                 self.last_refresh = dt.now()
