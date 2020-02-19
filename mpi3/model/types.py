@@ -26,8 +26,10 @@ class Statement(str):
     'SELECT * FROM library WHERE 1 = 1'
     """
 
+    # WHY DID I DO THIS \/
     def __new__(cls, a, *args, **kw):
         return str.__new__(cls, a)
+    # WHY DID I DO THIS /\
 
     regex = r'.*{(.*)}.*'
 
@@ -49,3 +51,4 @@ class Statement(str):
 
 
 Filter = Dict[str, List[str]]
+
