@@ -86,10 +86,9 @@ class View:
         self.papirus = Papirus(rotation=90)
         self.papirus.clear()
 
-        self.screen_size = (config['screen']['width']
-                            , config['screen']['height'])
-
         self._font_file = os.path.expanduser(self.config['font']['file'])
+
+        screen_size = (config['screen']['width'] , config['screen']['height'])
 
         render_options = {
             'font': self.get_font(self.config['font']['size']),
@@ -97,8 +96,8 @@ class View:
             'white': config['colors']['white'],
             'black': config['colors']['black'],
             'papirus': self.papirus,
-            'image': Image.new('1', self.screen_size, config['colors']['white']),
-            'screen_size': self.screen_size,
+            'image': Image.new('1', screen_size, config['colors']['white']),
+            'screen_size': screen_size,
         }
 
         self.renderer = Renderer(**render_options)

@@ -29,6 +29,23 @@ class NoSong(Exception):
     pass
 
 
+from contextlib import contextmanager
+
+@contextmanager
+def open_connection(db_file):
+    conn = sqlite3.connect(self.db_file)
+    cursor = self.conn.cursor()
+    try:
+        yield self.cursor
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()
+    finally:
+        conn.close()
+
+
 class OpenConnection:
     def __init__(self, db_file: str) -> None:
         self.db_file = os.path.expanduser(db_file)
@@ -50,7 +67,7 @@ class Executor:
         self.db_file = db_file
 
     def execute(self, query: Statement) -> None:
-        with OpenConnection(self.db_file) as db:
+        with open_connection(self.db_file) as db:
             db.execute(query)
 
 
@@ -63,7 +80,6 @@ class Database:
         self.executor = Executor(self.db_file)
         self.adder = BatchAdder(config)
 
-        self.TABLES = set()
         self.create_db()
         self.scan_libraries()
 
@@ -76,20 +92,19 @@ class Database:
 
         for table, statement in CREATE_STATEMENTS:
             self.executor.execute(Statement(statement))
-            self.TABLES.add(table)
 
     def scan_libraries(self) -> None:
         logger.info('Scanning following directory(s):{}'.format('\n\t'.join(self.dirs)))
 
         for loc_raw in self.dirs:
             loc = os.path.expanduser(loc_raw)
-            logger.debug('Scanning {raw}, expanded to {expanded}'.format(raw=loc_raw, expanded=loc))
+            logger.debug(f'Scanning {loc_raw}, expanded to {loc}')
 
             for (dirpath, _, filename) in os.walk(loc):
                 if filename:
                     for f in filename:
                         if os.path.splitext(f)[1].lower() != '.mp3':
-                            logger.debug('Found non-mp3 file: {}'.format(f))
+                            logger.debug(f'Found non-mp3 file: {f}')
                             continue
 
                         self.adder.add(os.path.join(dirpath, f))
@@ -187,9 +202,6 @@ class Database:
             db.execute(query)
 
     def truncate(self, table: str) -> None:
-        if table not in self.TABLES:
-            raise ValueError(f'{table} does not exist to TRUNCATE')
-
         with OpenConnection(self.db_file) as db:
             db.execute(TRUNCATE_TABLE.format(table=table))
 

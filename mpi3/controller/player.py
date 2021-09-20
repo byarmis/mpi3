@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import time
 import logging
 import subprocess
 from datetime import datetime as dt
@@ -88,9 +89,9 @@ class MusicPlayer:
             logger.debug('Stopping current song')
             self.stop()
 
-        logger.debug('Playing {}'.format(song_path))
+        logger.debug(f'Playing {song_path}')
 
-        self._write('LOAD {}'.format(song_path))
+        self._write(f'LOAD {song_path}')
 
     def stop(self) -> None:
         self._write('STOP')
@@ -126,7 +127,6 @@ class MPi3Player:
         self.view = View(config=self.config)
 
         self.button_mode = MODE.NORMAL
-        self.can_refresh = True
 
         initialize.setup_buttons(self.config,
                                  up=self.up,
@@ -140,12 +140,6 @@ class MPi3Player:
         # First render-- complete rerender
         self.render(HowUpdate(complete=True))
         self.last_refresh = dt.now()
-
-    @contextmanager
-    def render_block(self):
-        self.can_refresh = False
-        yield
-        self.can_refresh = True
 
     def change_song(self, direction: DIR) -> None:
         logger.debug('Getting next song')
@@ -197,8 +191,7 @@ class MPi3Player:
 
         if self.button_mode == MODE.NORMAL:
             logger.debug('clicking')
-            with self.render_block():
-                redraw = self.model.menu.on_click()
+            redraw = self.model.menu.on_click()
             logger.debug('clicked')
             self.render(partial=redraw)
             return
@@ -261,7 +254,6 @@ class MPi3Player:
 
     def run(self):
         logger.debug('Running player')
-        import time
 
         while True:
             time.sleep(0.1)
@@ -270,8 +262,8 @@ class MPi3Player:
             if music_state == PLAYBACK_STATES.DONE:
                 self.change_song(direction=DIR.FORWARD)
 
-            if self.can_refresh and \
-                    (dt.now() - self.last_refresh).total_seconds() >= self.config['heartbeat_refresh']:
+            if (dt.now() - self.last_refresh).total_seconds() >= self.config['heartbeat_refresh']:
                 logger.debug('Heartbeat re-render')
                 self.render(HowUpdate(partial=True))
                 self.last_refresh = dt.now()
+
